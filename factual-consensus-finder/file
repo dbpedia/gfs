@@ -1,0 +1,247 @@
+<%
+var othersrc = ["geonames.org","permid.org","dnb.de","kb.nl"];
+var labels = new Set();
+var ps = [];
+var selected;
+for(i = 0; i < jarray.length; i++) {
+    if ( jarray[i].predicate == "http://www.w3.org/2000/01/rdf-schema#label") {
+        var objectArray = jarray[i].objects;
+        for( k=0; k < objectArray.length; k++) {
+            labels.add(objectArray[k].value["@value"])
+        }
+    }
+    ps.push(jarray[i].predicate)
+    if ( jarray[i].predicate == predicate ) {
+        selected = jarray[i];
+    }
+}
+ps.sort();
+if( selected == null ) selected = jarray[0];
+var linkMap = new Map();
+var derivedFrom = [] //( iriprov == null ) ? [] : iriprov.derivedFrom; //selected == null || iriprov == null )
+if( iriprov == null ) { //selected == null || iriprov == null ) {
+    sourceList.forEach(function (value) {
+        if( value.includes("wikidata" ) ) {
+            linkMap.set("wikidata",' <a href="" ><image class="iconlinks" src="images/wikidata.ico"></image></a>')
+        } else if ( value.includes("dbpedia") ){ // HARDCODED LIST !
+            linkMap.set(value,'  <a href="" ><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href=""><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+        } else {
+            linkMap.set(value,"");
+        }
+    })
+}
+derivedFrom.forEach(function (derived) {
+    var value = derived.value;
+    var tag = value.split("/").pop();
+    if( value.includes("wikidata") ) {
+        linkMap.set("wikidata.dbpedia.org",' <a href="'+value+'" target="_blank"><image class="iconlinks" src="images/wikidata.ico"></image></a>')
+    } else if (value.includes("dbpedia") ) {
+        var lan = value.split("//")[1].split(".")[0];
+        lan = ( lan == "dbpedia" ) ? "en" : lan;
+        var wikilink = ( value == "en" ) ? 'http://wikipedia.org/wiki/'+tag : 'http://'+lan+'.wikipedia.org/wiki/'+tag;
+        linkMap.set(lan+".dbpedia.org",'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+value+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+    } else if (value.includes("geonames.org") ) {
+        linkMap.set("geonames.org",'<a style="color: black;" href="'+value+'" target="_blank">geonames.org</a>');
+    } else if (value.includes("permid.org") ) {
+        linkMap.set("permid.org",'<a style="color: black;" href="'+value+'" target="_blank">permid.org</a>');
+    } else if (value.includes("d-nb.info") ) {
+        linkMap.set("dnb.de",'<a style="color: black;" href="'+value+'" target="_blank">dnb.de</a>');
+    } else if (value.includes("data.bibliotheken.nl") ) {
+        linkMap.set("kb.nl",'<a style="color: black;" href="'+value+'" target="_blank">kb.nl</a>');
+    } else {
+        linkMap.set(value,"");
+    }
+})
+%>
+<div class="container">
+    <form action="./" method="get">
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label for="subject">subject</label>
+                <input type="text" class="form-control" placeholder="subject" id="subject" name="s" value="<%- subject %>">
+            </div>
+        </div>
+        <div class="form-group col-md-5">
+            <label for="predicateList">predicate</label>
+            <select id="predicateList" class="form-control" onchange="change_predicate(document.getElementById('predicateList').value)">
+                <% for (i = 0; i < ps.length ; i++) {
+                if ( ps[i] == predicate ) { %>
+                    <option selected=true><%- ps[i] %></option>
+                <% } else { %>
+                    <option><%- ps[i] %></option>
+                <% }} %>
+            </select>
+        </div>
+        <div class="form-group col-md-3">
+            <label for="sourceList">source</label>
+            <select id="sourceList" class="form-control" name="src" onchange="change_source(document.getElementById('sourceList').value)">
+                <% for (i = 0; i < sourceList.length ; i++) {
+                if ( sourceList[i] == source ) { %>
+                    <option selected=true value="<%- sourceList[i]%>"><%- sourceList[i].includes("dbpedia") ? sourceList[i].split(".")[0] : sourceList[i] %></option>
+                <% } else { %>
+                    <option value="<%- sourceList[i]%>"><%- sourceList[i].includes("dbpedia") ? sourceList[i].split(".")[0] : sourceList[i] %></option>
+                <% }} %>
+            </select>
+        </div>
+    </form>
+</div>
+<div id="preview" class="container content">
+    <%
+    var labarr = Array.from(labels);
+    labarr.sort();
+    %>
+    <h3><strong>About: </strong><%- labarr.join(' | ') %></h3>
+    <p><font id="info" style="font-size: 18px">0 different values in 0 sources</font></p>
+    <table id="fusionTable" class="table table-striped tablesorter">
+        <colgroup>
+            <col span="1" style="width: 50%;">
+            <col span="1" style="width: 40%;">
+            <col span="1" style="width: 10%;">
+            <col span="1" style="width: 0;">
+        </colgroup>
+        <tr>
+            <th>
+                <label>Value</label>
+                <input class="invis" type="text">
+            </th>
+            <th>
+                <label>Source</label>
+                <input class="invis" type="text">
+            </th>
+            <th>
+                <label>References</label>
+                <input class="invis" type="text">
+            </th>
+            <th class="hidden-col">
+                <label></label>
+                <input class="invis" type="text">
+            </th>
+        </tr>
+        <%
+        var objects = (jarray.length == 0 ) ? [] : selected.objects;
+        var maxSources = new Set();
+        var counter = 0;
+        objects.forEach(function (x) {
+            var color = "white";
+            var sources = [];
+            for( s = 0 ; s < x.source.length; s++ ) {
+                if(x.source[s]['@value'].includes(source) ) {
+                    var lin = (typeof linkMap.get(source) === "undefined") ? "" : linkMap.get(source)
+                    var sel = source.includes("dbpedia") ? source.split(".")[0] : source;
+                    if( othersrc.indexOf(source) > -1 ) {
+                        sel = "";
+                        lin = '<strong>'+lin+'</strong>'
+                    }
+                    sources.push('<strong>'+sel+'</strong>'+lin)
+                    maxSources.add(source)
+                    color="lightgreen"
+                } else {
+                    sourceList.forEach(function (sl) {
+                        if(x.source[s]['@value'].includes(sl)) {
+                            var lin = (typeof linkMap.get(sl) === "undefined") ? "" : linkMap.get(sl)
+                            var sel = sl.includes("dbpedia") ? sl.split(".")[0] : sl;
+                            if( othersrc.indexOf(sl) > -1 ) sel = "";
+                            sources.push(sel+lin)
+                            maxSources.add(sl)
+                        }
+                    })
+
+                }
+            }
+
+            var href = x.value['@id'] == null ? "" : "./?s="+encodeURIComponent(x.value['@id'])+"&src="+source;
+            var hrefLabel = x.value['@id']  == null ? "" : x.value['@id'];
+            // if( !hrefLabel.startsWith('http://id.dbpedia.org/') )  hrefLabel = "";
+            sources.sort();
+        %>
+        <tr style="background-color:<%- color %>;">
+            <td><%- x.value['@value']  %><%- x.value['@language'] == null ? "" : " @"+  "<strong>"+x.value['@language']+"</strong>" %>
+                <a id="label<%-counter%>" href="<%- href %>"><%- hrefLabel %></a></td>
+            <td><%- sources.join(' | ')%></td>
+            <td>TODO</td>
+            <td class="hidden-col"><%- sources.length %></td>
+        </tr>
+        <% ++counter }) %>
+    </table>
+</div>
+<script type="text/javascript">
+
+    var subject = "<%- subject %>";
+    var predicate = "<%- predicate %>";
+    var source = "<%- source %>";
+
+    function change_predicate(selected_predicate){
+        var current = window.location.href;
+        current = current.substr(0,current.indexOf('?'))
+        window.location.href = current+ "?s="+encodeURIComponent(subject)+"&p="+encodeURIComponent(selected_predicate)+"&src="+encodeURIComponent(source);
+    }
+    function change_source(selected_source){
+        var current = window.location.href;
+        current = current.substr(0,current.indexOf('?'))
+        window.location.href = current+ "?s="+encodeURIComponent(subject)+"&p="+encodeURIComponent(predicate)+"&src="+encodeURIComponent(selected_source);
+    }
+
+    function sortTable(n) {
+        var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+        table = document.getElementById("fusionTable");
+        switching = true;
+        dir = "desc";
+        while (switching) {
+            switching = false;
+            rows = table.getElementsByTagName("TR");
+            for (i = 1; i < (rows.length - 1); i++) {
+                shouldSwitch = false;
+                x = rows[i].getElementsByTagName("TD")[n];
+                y = rows[i + 1].getElementsByTagName("TD")[n];
+                if (dir == "asc") {
+                    if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                        shouldSwitch= true;
+                        break;
+                    }
+                } else if (dir == "desc") {
+                    if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                        shouldSwitch= true;
+                        break;
+                    }
+                }
+            }
+            if (shouldSwitch) {
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+                switchcount ++;
+            } else {
+                if ( switchcount == 0 && dir == "asc")  {
+                    dir = "desc";
+                    switching = true;
+                }
+            }
+        }
+    }
+
+    // run on relaod
+    document.getElementById("info").innerText = '<%- objects.length %> different value/s in <%- Array.from(maxSources).length %> source/s';
+    $(function(){
+        sortTable(3);
+
+        // Get labels
+        var c = parseInt(<%-counter%>);
+        for ( a = 0 ; a < c; a++  ) {
+            (function(a) { // protects i in an immediately called function
+                var tmpLabel = document.getElementById("label"+a);
+                var searchUri = tmpLabel.innerHTML;
+                if(searchUri.startsWith('http://id.dbpedia.org/')) {
+                    $.getJSON('./label/?s='+searchUri, function (data) {
+                        var labels = new Set();
+                        data.objects.forEach(function (label) {
+                            labels.add(label.value['@value']);
+                        })
+                        var labelsSort = Array.from(labels).sort();
+                        tmpLabel.innerHTML = labelsSort.join(' | ');
+                    })
+                }
+            })(a);
+        }
+    });
+</script>
+
+document.getElementById("info").innerText = '<%- objects.length %> different value/s in <%- Array.from(maxSources).length %> source/s';

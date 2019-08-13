@@ -1,0 +1,101 @@
+<script type="text/javascript">
+    function change_predicate(selected_predicate){
+        var current = window.location.href;
+        current = current.substr(0,current.indexOf('?'))
+        window.location.href = current+ "?s=<%- encodeURIComponent(subject) %>&p="+encodeURIComponent(selected_predicate)+"&src=<%- src %>";
+    }
+    function change_source(selected_source){
+        var current = window.location.href;
+        current = current.substr(0,current.indexOf('?'))
+        window.location.href = current+ "?s=<%- encodeURIComponent(subject) %>&p=<%- encodeURIComponent(predicate) %>&src="+encodeURIComponent(selected_source);
+    }
+</script>
+<%
+
+var srclist = ['general','fr','nl'];
+var labels = new Set();
+var ps = [];
+var selected;
+for(i = 0; i < jarray.length; i++) {
+    if ( jarray[i].predicate == "http://www.w3.org/2000/01/rdf-schema#label") {
+        var objects = jarray[i].objects;
+        for( k=0; k < objects.length; k++) {
+            labels.add(objects[k].value["@value"])
+        }
+    }
+    ps.push(jarray[i].predicate)
+    if ( jarray[i].predicate == predicate ) {
+        selected = jarray[i];
+    }
+}
+ps.sort();
+%>
+<form action="/dev4040" method="get">
+    <div class="form-row">
+        <div class="form-group col-md-5">
+            <label for="subject">subject</label>
+            <input type="text" class="form-control" placeholder="Search" id="subject" name="s" value="<%- subject %>">
+        </div>
+        <!--<input type="text" class="form-control" placeholder="Search" id="searchbox" name="p" value="<%- predicate %>">-->
+        <div class="form-group col-md-5">
+            <label for="optionList">predicate</label>
+            <select id="optionList" class="form-control" name="p" onchange="change_predicate(document.getElementById('optionList').value)">
+                <% for (i = 0; i < ps.length ; i++) {
+                    if ( ps[i] == predicate ) { %>
+                        <option selected="true"><%- ps[i] %></option>
+                    <% } else { %>
+                        <option><%- ps[i] %></option>
+                <% }} %>
+            </select>
+        </div>
+        <div class="form-group col-md-2">
+            <label for="sourceList">source</label>
+            <select id="sourceList" class="form-control" name="p" onchange="change_source(document.getElementById('sourceList').value)">
+                <% for (i = 0; i < srclist.length ; i++) {
+                    if ( srclist[i] == src ) { %>
+                        <option selected="true"><%- srclist[i] %></option>
+                    <% } else { %>
+                        <option><%- srclist[i] %></option>
+                 <% }} %>
+            </select>
+            <!--<input type="text" class="form-control" placeholder="Search" id="source" name="src" value="<%- src %>">-->
+        </div>
+    </div>
+    <div class="form-row">
+        <div class="col-md-12">
+            <button class="btn btn-default" type="submit" id="searchbtn"><i class="glyphicon glyphicon-search" style="line-height: inherit"></i></button>
+        </div>
+    </div>
+</form>
+<br><br><br><br><br><br>
+<div class="ml-5">
+<hr>
+<h3><strong>About:</strong> <%- Array.from(labels).join(' | ') %></h3>
+<table class="table">
+    <tr><th>value</th><th>source</th><th>selected</th></tr>
+<%
+var objects = selected.objects
+objects.forEach(function (x) {
+    var sources = [];
+    for( s = 0 ; s < x.source.length; s++ ) {
+        if(x.source[s]['@value'] == src ) {
+            sources.push('<u><strong><font  color="red">'+x.source[s]['@value']+"</font></strong></u>")
+        } else {
+            sources.push(x.source[s]['@value'])
+        }
+    }
+    var color = "white";
+    if( x.selected == true ) color = "white";
+    // if( x.source.contains("fr") ) color = "grey";
+%>
+    <tr style="background-color: <%- color%>;"><td><%- x.value['@value'] %><%- x.value['@id'] %></td><td><%- sources.join(' | ')%></td><td><%- x.selected %></td></tr>
+<% }) %>
+</table>
+<!--
+<hr>
+<script>
+    var json = JSON.parse('<%- JSON.stringify(jarray) %>')
+</script>
+<div id="result"></div>
+-->
+</div>

@@ -1,0 +1,380 @@
+<%
+    var labels = new Set()
+    var objects = []
+    var sources = new Set()
+    sources.add('general')
+
+    var color = "white";
+
+    var predicates = new Set()
+
+    function getLangTag ( singleFileLocator ) {
+
+        var langTagStartPos = String(singleFileLocator).indexOf("lang=")
+
+        if ( langTagStartPos > -1 ) {
+
+            var afterLang = String(singleFileLocator).substr(langTagStartPos+5)
+
+            if ( afterLang.indexOf('_') > -1 ) {
+
+                return afterLang.substr(0,afterLang.indexOf('_'))
+
+            } else {
+
+                return afterLang.substr(0,afterLang.indexOf('.'))
+            }
+        } else {
+
+            return "wikidata"
+        }
+    }
+
+    jarray.forEach( function (response) {
+
+        predicates.add(response['predicate']['@id'])
+
+        if ( response['predicate']['@id'] == predicate ) {
+            response.objects.forEach( function ( prov ) {
+                prov["source"].forEach( function ( source ) {
+                    sources.add(getLangTag(source['@id']))
+                })
+            })
+            objects.push(response['objects'])
+        }
+
+        if ( response['predicate']['@id'] == conf.default_predicate ) {
+            response['objects'].forEach( function ( prov ) {
+                labels.add(prov['object']['@value'])
+            })
+        }
+    })
+
+    var sourceList = Array.from(sources).sort()
+    var predicateList = Array.from(predicates).sort()
+
+    var refMap = new Map();
+
+    locals.forEach(function (iri) {
+
+        var tag = iri.split("/").pop();
+
+        if( iri.includes("www.wikidata") ) {
+
+            refMap.set("wikidata",' <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/wikidata.ico"></image></a>')
+
+        } else if (iri.includes("dbpedia") ) {
+
+            var lan = iri.split("//")[1].split(".")[0];
+            lan = ( lan == "dbpedia" ) ? "en" : lan;
+            var wikilink = ( iri == "en" ) ? 'http://wikipedia.org/wiki/'+tag : 'http://'+lan+'.wikipedia.org/wiki/'+tag;
+            refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+
+        } else {
+            refMap.set(iri,"");
+        }
+    })
+%>
+
+<!-- Labels -->
+
+<div class="container"><h3><strong>About: </strong><%-  Array.from(labels).sort().join(' | ') %></h3></div>
+
+<!--Sponsored-->
+<% if( false ) {%>
+    <div class="container" style="width: 70%;align-self: center">
+        <div class="my-slider">
+            <figure>
+                <img src="images/aylien.jpg" height="72" width="72">
+                <figcaption><br><a target="_blank" href="https://newsapi.aylien.com/demo#!/?published_at.start=NOW-30DAYS%2FDAY&published_at.end=NOW&entities.body.links.dbpedia%5B%5D=http:%2F%2Fdbpedia.org%2Freresource%2FSiemens&sort_by=recency">Find latest news about Siemens</a></figcaption>
+            </figure>
+            <figure>
+                <img src="images/oc.png" height="72" width="72">
+                    <figcaption><br><a target="_blank" href="https://opencorporates.com/companies/gb/00727817">More data available on OpenCorporates</a></figcaption>
+            </figure>
+            <figure>
+                <img src="images/wikidata.png" height="72" width="102">
+                <figcaption><br><a target="_blank" href="https://www.wikidata.org/wiki/Q81230">Edit on Wikidata</a></figcaption>
+            </figure>
+            <figure>
+                <img src="images/rdfu.png" height="72" width="200">
+                <figcaption><br><a target="_blank" href="">Test data with SHACL</a></figcaption>
+            </figure>
+        </div>
+    </div>
+<% } %>
+
+<!--Menu-->
+
+<div class="container">
+    <form action="./" method="get">
+        <div class="form-row">
+            <div class="form-group col-md-4">
+                <label for="subject">subject</label>
+                <input type="text" class="form-control" placeholder="subject" id="subject" name="s" value="<%- subject %>">
+            </div>
+        </div>
+        <div class="form-group col-md-6">
+            <label for="predicateList">predicate</label><br>
+            <select style="width: 100%" id="predicateList" data-width="100%" class="selectpicker control" data-live-search="true" name="" onchange="change_predicate(document.getElementById('predicateList').value)">
+                <% for (i = 0; i < predicateList.length ; i++) {
+                if ( predicateList[i] == predicate ) { %>
+                    <option selected><%- predicateList[i] %></option>
+                <% } else { %>
+                    <option><%- predicateList[i] %></option>
+                <% }} %>
+            </select>
+        </div>
+        <div class="form-group col-md-2">
+            <label for="sourceList">source</label><br>
+            <select id="sourceList" class="selectpicker form-control" data-live-search="true" name="src" onchange="change_source(document.getElementById('sourceList').value)">
+                <% for (i = 0; i < sourceList.length ; i++) {
+                if ( sourceList[i] == source ) { %>
+                    <option selected value="<%- sourceList[i] %>"><%- sourceList[i] %></option>
+                <% } else { %>
+                    <option value="<%- sourceList[i]%>"><%- sourceList[i] %></option>
+                <% }} %>
+            </select>
+        </div>
+    </form>
+</div>
+
+<!-- Table -->
+
+<div id="preview" class="container content">
+    <p><font id="info" style="font-size: 18px">0 different values from 0 sources</font></p>
+    <table id="fusionTable" class="table table-striped tablesorter">
+        <colgroup>
+            <col span="1" style="width: 60%;">
+            <col span="1" style="width: 40%;">
+            <col span="1" style="width: 10%;">
+            <col span="1" style="width: 0;">
+        </colgroup>
+        <tr>
+            <th>
+                <label>Value</label>
+                <input class="invis" type="text">
+            </th>
+            <th>
+                <label>Source</label>
+                <input class="invis" type="text">
+            </th>
+            <!--th>
+                <!--label>References</label-->
+                <input class="invis" type="text">
+            </th>
+            <th class="hidden-col"-->
+                <label></label>
+                <input class="invis" type="text">
+            </th>
+        </tr>
+        <%
+            var possibleSources = new Set();
+            var rowCount = 0;
+
+            objects.forEach(function ( element ) {
+                element.forEach( function (prov) {
+
+                var color = "white";
+                var objectSources = [];
+
+                prov['source'].forEach( function ( src ) {
+
+                    var current_source = getLangTag(src['@id'])
+                    var refLinks = (typeof refMap.get(current_source) === "undefined") ? "" : refMap.get(current_source)
+                    if( current_source == source) {
+                        objectSources.push('<strong>'+current_source+'</strong>'+refLinks);
+                        possibleSources.add(current_source)
+                        color="lightgreen"
+                    } else {
+                        objectSources.push(current_source+refLinks)
+                        possibleSources.add(current_source)
+                    }
+                })
+
+                objectSources.sort();
+
+                var href = '@id' in prov['object'] ? "./?s="+encodeURIComponent(prov['object']['@id'])+"&src="+source : "" ;
+                var hrefLabel = '@id' in prov['object'] ? prov['object']['@id'] : "";
+
+        %>
+        <tr style="background-color:<%- color %>;">
+            <% if ( '@language' in prov['object'] ) { %>
+
+                <td id="row<%- rowCount %>">
+                    <%-
+                        util.format(
+                            "%s @<strong>%s</strong>",
+                            prov['object']['@value'],
+                            prov['object']['@language']
+                        )
+                    %>
+                </td>
+
+            <% } else if ( '@value' in prov['object'] ) { %>
+
+                <td id="row<%- rowCount %>">
+                    <%- prov['object']['@value'] %>
+                </td>
+
+            <% } else { %>
+                <td><a id="row<%- rowCount %>" href="<%- href %>"><%- hrefLabel %></a></td>
+            <% } %>
+            <td><%- objectSources.join(' | ')%></td>
+            <!--td>TODO</td-->
+            <td class="hidden-col"><%- objectSources.length %></td>
+        </tr>
+        <% ++rowCount } ) }) %>
+    </table>
+</div>
+
+<!--Client JS-->
+
+<script>
+
+    // var slider = tns({
+    //     "container": ".my-slider",
+    //     "items": 2,
+    //     "slideBy": "page",
+    //     "mouseDrag": true,
+    //     "swipeAngle": false,
+    //     "speed": 400,
+    //     "nav": false,
+    //     "controls": false,
+    //     "gutter": 0,
+    //     "autoplay": true,
+    //     "autoplayButtonOutput": false,
+    //     "autoplayButton": false,
+    //     // container: '.my-slider',
+    //     // items: 1,
+    //     responsive: {
+    //         640: {
+    //             edgePadding: 20,
+    //             gutter: 20,
+    //             items: 2
+    //         },
+    //         700: {
+    //             gutter: 30
+    //         },
+    //         900: {
+    //             items: 4
+    //         }
+    //     }
+    // });
+</script>
+
+<script type="text/javascript">
+
+    // copied variables
+    var subject = "<%- subject %>";
+    var predicate = "<%- predicate %>";
+    var source = "<%- source %>";
+
+    // menu changes
+    function change_predicate(selected_predicate){
+
+        var currentUrl = window.location.href;
+        currentUrl = currentUrl.substr(0,currentUrl.indexOf('?'))
+
+        window.location.href = currentUrl + "?s="+encodeURIComponent(subject)+"&p="+encodeURIComponent(selected_predicate)+"&src="+encodeURIComponent(source);
+    }
+
+    function change_source(selected_source){
+
+        var currentUrl = window.location.href;
+        currentUrl = currentUrl.substr(0,currentUrl.indexOf('?'))
+
+        window.location.href = currentUrl+ "?s="+encodeURIComponent(subject)+"&p="+encodeURIComponent(predicate)+"&src="+encodeURIComponent(selected_source);
+    }
+
+    // TODO better table sort
+    function sortTable(n, dir) {
+        var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+        table = document.getElementById("fusionTable");
+        switching = true;
+        while (switching) {
+            switching = false;
+            rows = table.getElementsByTagName("TR");
+            for (i = 1; i < (rows.length - 1); i++) {
+                shouldSwitch = false;
+                x = rows[i].getElementsByTagName("TD")[n];
+                y = rows[i + 1].getElementsByTagName("TD")[n];
+                if (dir == "asc") {
+                    if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
+                        shouldSwitch= true;
+                        break;
+                    }
+                } else if (dir == "desc") {
+                    if (x.innerHTML.toLowerCase() < y.innerHTML.toLowerCase()) {
+                        shouldSwitch= true;
+                        break;
+                    }
+                }
+            }
+            if (shouldSwitch) {
+                rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+                switching = true;
+                switchcount ++;
+            } else {
+                if ( switchcount == 0 && dir == "asc")  {
+                    dir = "desc";
+                    switching = true;
+                }
+            }
+        }
+    }
+
+    // Init
+
+    $(function(){
+
+        document.getElementById("info").innerText = '<%- rowCount %> different value/s from <%- Array.from(possibleSources).length %> source/s';
+	
+	//sortTable(0,"asc");
+	sortTable(2,"desc");
+        //sortTable(2,"desc");
+	
+        // Get labels
+        var rowCount = parseInt(<%- rowCount %>);
+
+        for ( index = 0 ; index < rowCount; index++  ) {
+            (function(index) { // protects index in an immediately called function
+                var row = document.getElementById("row"+index);
+                var searchUri = row.innerHTML;
+
+
+                if(searchUri.startsWith('https://global.dbpedia.org/id/')) {
+
+                    $.getJSON('./label/?s='+searchUri).then(function (labelResponseArray) {
+
+                        var labels = new Set()
+
+                        labelResponseArray.forEach( function ( labelResponse ) {
+                            labelResponse['objects'].forEach( function ( prov ) {
+                                labels.add(prov['object']['@value'])
+                            })
+                        })
+
+                        console.log(Array.from(labels).sort().join(' | '))
+                        row.innerHTML = Array.from(labels).sort().join(' | ');
+                    }).catch(function (labelError) {
+                        console.log(labelError)
+                    })
+                }
+            })(index);
+        }
+
+        document.getElementById("subject").addEventListener("keyup", function(event) {
+            event.preventDefault();
+            if (event.keyCode == 13) {
+                // var sub = document.getElementById("subject").innerText;
+                var current = window.location.href;
+                current = current.substr(0,current.indexOf('?'))
+                window.location.href = current+ "?s="+encodeURIComponent(document.getElementById("subject").value);
+            }
+        });
+
+    });
+
+
+</script>

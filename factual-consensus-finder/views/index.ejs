@@ -1,0 +1,40 @@
+<form action="index.php" method="get"
+<div class="input-group">
+
+    <input type="text" class="form-control" placeholder="Search" id="searchbox" name="q" value="<?php echo $q?>">
+    <div class="input-group-btn">
+        <button class="btn btn-default" type="submit" id="searchbtn">
+            <i class="glyphicon glyphicon-search" style="line-height: inherit"></i></button>
+    </div>
+</div>
+</form>
+<p></p>
+<% function getMethods(obj)
+{
+    var res = [];
+    for(var m in obj) {
+        if(typeof obj[m] == "function") {
+            res.push(m)
+        }
+    }
+    return res;
+}
+
+%>
+<table>
+    <tr><td>Fixed</td><td>s,p</td></tr>
+    <tr><td>Uri</td><td>subject</td></tr>
+    <tr><td>Name</td><td>label</td></tr>
+    <tr><td>Property</td>
+        <td><select>
+                <option value="dbo:birthDate">dbo:birthDate</option>
+                <option value="rdf:type">rdf:type</option>
+                <option value="rdfs:label">rdfs:label (default)</option>
+                <option value="dbo:leader">dbo:leader</option>
+            </select>
+        </td></tr>
+    <tr><td>Stats</td><td>s,p</td></tr>
+</table>
+<% for(i= 0; i < 5; i++) { %>
+    Test
+<% }%>
