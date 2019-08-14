@@ -1,8 +1,16 @@
-# FactualConsensusFinder
+# GFS Data Browser
 
-Prefusion([FlexiFusion](https://svn.aksw.org/papers/2019/ISWC_FlexiFusion/public.pdf)) based viewer for possible inconsensus in Wikipedia, Wikidata and "Your Data".
+GFS Project: https://meta.wikimedia.org/wiki/Grants:Project/DBpedia/GlobalFactSyncRE
+Deployed at https://global.dbpedia.org 
+Paper Prefusion([FlexiFusion](https://svn.aksw.org/papers/2019/ISWC_FlexiFusion/public.pdf)) based viewer for possible inconsensus in Wikipedia, Wikidata and "Your Data".
 
 ## Usage
+
+Use any URI from Wikipedia/DBpedia or Wikidata as `?s` parameter:
+https://global.dbpedia.org/?s=http://en.wikipedia.org/wiki/Eiffel_Tower 
+
+## Install (using our database)
+ 
  
 > Prerequisites [node.js & npm](https://nodejs.org/en/)
   (e.g Debian/Ubunutu `sudo apt-get install nodejs`)
