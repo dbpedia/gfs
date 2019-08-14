@@ -6,8 +6,6 @@ DBpedia, which frequently crawls and analyses over 120 Wikipedia language editio
 
 # Applications
 
-## Factual Consensus Finder
+## GFS Data Browser
 
-**TODO**
-
-# Services
+See [Readme](https://github.com/dbpedia/gfs/blob/master/gfs-data-browser/README.md) in sub folder

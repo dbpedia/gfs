@@ -1,8 +1,8 @@
 # GFS Data Browser
 
-GFS Project: https://meta.wikimedia.org/wiki/Grants:Project/DBpedia/GlobalFactSyncRE
-Deployed at https://global.dbpedia.org 
-Paper Prefusion([FlexiFusion](https://svn.aksw.org/papers/2019/ISWC_FlexiFusion/public.pdf)) based viewer for possible inconsensus in Wikipedia, Wikidata and "Your Data".
+* GFS Project: https://meta.wikimedia.org/wiki/Grants:Project/DBpedia/GlobalFactSyncRE
+* Deployed at https://global.dbpedia.org 
+* Prefusion([FlexiFusion](https://svn.aksw.org/papers/2019/ISWC_FlexiFusion/public.pdf)) based viewer for possible inconsistencies in Wikipedia, Wikidata and "Your Data".
 
 ## Usage
 
