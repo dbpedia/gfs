@@ -55,7 +55,7 @@ app.get('/', function(req, res) {
         s = s.replace("wikipedia.org/wiki/","dbpedia.org/resource/");
     }
 
-    getJSON(conf.id_management+s).then( function (idResponse) {
+    getJSON(conf.id_management+encodeURIComponent(s)).then( function (idResponse) {
 
         if( s.startsWith("https://global.dbpedia")) {
             console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+"\t"+p);
@@ -93,7 +93,7 @@ app.get('/raw', function(req, res) {
 
     var locals = [s];
 
-    getJSON(conf.id_management+s).then( function (idResponse) {
+    getJSON(conf.id_management+encodeURIComponent(s)).then( function (idResponse) {
         console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+s+"\t"+p);
         s = idResponse['global'];
         locals = idResponse['locals'];
