@@ -4,6 +4,9 @@
     var sources = new Set()
     sources.add('general')
 
+    var whiteList1 = new Set(["en","be","bg","ca","el","eo","es","fr","ga","gl","id","ja","lv","pt","sv","uk"])
+    var whiteList2 = new Set(["ar","az","be","bg","bn","ca","commons","cs","cy","de","el","en","eo", "es","eu","fr","ga","gl","hi","hr","hu","hy","id","it","ja", "ko","lv","mk","nl","pl","pt","ro","ru","sk","sl","sr","sv","tr","uk","vi"])
+
     var color = "white";
 
     var predicates = new Set()
@@ -67,8 +70,20 @@
 
             var lan = iri.split("//")[1].split(".")[0];
             lan = ( lan == "dbpedia" ) ? "en" : lan;
+
             var wikilink = ( iri == "en" ) ? 'http://wikipedia.org/wiki/'+tag : 'http://'+lan+'.wikipedia.org/wiki/'+tag;
-            refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+
+            if( whiteList1.has(lan) ) {
+
+                refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+            } else if( whiteList2.has(lan) ) {
+
+                var dbpediaLink = "http://dbpedia.informatik.uni-leipzig.de:9998/server/extraction/"+lan+"/extract?extractors=mappings&format=trix&title="+tag
+                refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+dbpediaLink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+            } else {
+
+                refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+            }
 
         } else {
             refMap.set(iri,"");
@@ -106,7 +121,7 @@
 
 <!--Menu-->
 
-<div class="container">
+<div class="container"
     <form action="./" method="get">
         <div class="form-row">
             <div class="form-group col-md-4">
@@ -159,8 +174,8 @@
                 <label>Source</label>
                 <input class="invis" type="text">
             </th>
-            <!--th>
-                <!--label>References</label-->
+            <th>
+                <!--<label>References</label-->
                 <input class="invis" type="text">
             </th>
             <th class="hidden-col"-->
