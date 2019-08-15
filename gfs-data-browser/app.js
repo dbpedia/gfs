@@ -55,6 +55,12 @@ app.get('/', function(req, res) {
         s = s.replace("wikipedia.org/wiki/","dbpedia.org/resource/");
     }
 
+    if ( s.includes("wikidata.org/wiki/") ) {
+        s = s.replace("wikidata.org/wiki/", "wikidata.org/entity/");
+        s = s.replace("https://","http://");
+        s = s.split("?")[0]
+    }
+
     getJSON(conf.id_management+encodeURIComponent(s)).then( function (idResponse) {
 
         if( s.startsWith("https://global.dbpedia")) {
