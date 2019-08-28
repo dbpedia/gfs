@@ -11,8 +11,11 @@ var dateTime = require('node-datetime');
 
 var conf = require('./config');
 var MongoClient = require('mongodb').MongoClient;
+var MongoClient2 = require('mongodb').MongoClient;
 var util = require('util');
 var connection;
+var connection2;
+var references = [];
 
 var getJSON = require('get-json');
 
@@ -33,6 +36,13 @@ MongoClient.connect(conf.mongo_url, function(err, client) {
     if (err) return console.log(err);
 
     connection = client.db(conf.database_name)
+});
+
+MongoClient2.connect('mongodb+srv://infoboxes_read:Read2019references@infoboxes-56nnq.mongodb.net/infoboxes?retryWrites=true&w=majority', function(err, client2) {
+
+    if (err) return console.log(err);
+
+    connection2 = client2.db('infoboxes')
 });
 
 app.get('/', function(req, res) {
@@ -129,6 +139,70 @@ app.get('/label', function (req,res) {
         .toArray(function (mongoError, mongoResponse) {
             res.send(JSON.stringify(mongoResponse));
         })
+});
+
+
+app.get('/infobox', function(req, res) {
+
+    var s = req.query.s;
+    var s1 = req.query.s;
+    var p = req.query.p;
+    var src = req.query.src;
+
+    if( s == null ) s = conf.default_subject;
+    if( p == null ) p = conf.default_predicate;
+    if( src == null  ) src = "general";
+
+    var original = s;
+    var locals;
+
+    //TODO logging
+    if ( s.includes("wikipedia.org/wiki/") ) {
+        s = s.replace("https://","http://");
+        s = s.replace("http://en.","http://");
+        s = s.replace("wikipedia.org/wiki/","dbpedia.org/resource/");
+    }
+
+    if ( s.includes("wikidata.org/wiki/") ) {
+        s = s.replace("wikidata.org/wiki/", "wikidata.org/entity/");
+        s = s.replace("https://","http://");
+        s = s.split("?")[0]
+    }
+
+
+    
+    
+    
+    getJSON(conf.id_management+encodeURIComponent(s)).then( function (idResponse) {
+        var idglobal = idResponse['global'].replace('https://global.dbpedia.org/id/','');
+        
+        connection2.collection('infoboxes').find( {"_id" : idglobal }).toArray(function (mongoError, mongoResponse) {
+            //console.log(mongoResponse[0]);
+        references=mongoResponse[0];
+        });
+        
+
+        if( s.startsWith("https://global.dbpedia")) {
+            console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+"\t"+p);
+        } else {
+            console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+">>"+idResponse['global']+"\t"+p);
+        }
+
+        connection.collection(conf.collection).find( {"subject.@id" : idResponse['global'] }).toArray(function (mongoError, mongoResponse) {
+            res.render('clientbased2',{jarray: mongoResponse, subject: idResponse['global'], predicate: p,
+                source: src, util: util, conf: conf, locals: idResponse['locals'], references: references });
+        })
+
+    }).catch(function (idError) {
+        console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+"\t"+p+"\tunmanaged id");
+    
+        connection.collection(conf.collection).find( {"subject.@id" : s }).toArray(function (mongoError, mongoResponse) {
+            res.render('clientbased2',{jarray: mongoResponse, subject: s, predicate: p,
+                source: src, util: util, conf: conf, locals: [s], references: references });
+        })
+    });
+
+
 });
 
 
