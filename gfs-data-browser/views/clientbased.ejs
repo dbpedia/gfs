@@ -360,15 +360,13 @@
 
                 if(searchUri.startsWith('https://global.dbpedia.org/id/')) {
 
-                    $.getJSON('./label/?s='+searchUri).then(function (labelResponseArray) {
+                    $.getJSON('./label/?s='+searchUri).then(function (labelResponse) {
 
                         var labels = new Set()
 
-                        labelResponseArray.forEach( function ( labelResponse ) {
                             labelResponse['objects'].forEach( function ( prov ) {
                                 labels.add(prov['object']['@value'])
                             })
-                        })
 
                         console.log(Array.from(labels).sort().join(' | '))
                         row.innerHTML = Array.from(labels).sort().join(' | ');

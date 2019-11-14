@@ -1,14 +1,25 @@
 module.exports = {
     expose_port: "9005",
 
-    mongo_url: "mongodb://readonly:gfs@88.99.242.78:8989/prefusion",
-    database_name: "prefusion",
-    collection: "provenance",
+    db: "mongodb://root:gfs2019*@dbpedia.informatik.uni-leipzig.de:8989/admin",
+    db_name: "prefusion",
 
-    id_management: "https://global.dbpedia.org/same-thing/lookup/?uri=",
+    coll_provenance: "provenance",
+    coll_context: "context",
 
-    preference: "wikidata.dbpedia.org,en.dbpedia.org,de.dbpedia.org,fr.dbpedia.org,nl.dbpedia.org,sv.dbpedia.org",
+    same_thing: "https://global.dbpedia.org/same-thing/lookup/?uri=",
 
-    default_subject: "https://global.dbpedia.org/id/4KKSo",
-    default_predicate: "http://www.w3.org/2000/01/rdf-schema#label"
+    init_subject: "https://global.dbpedia.org/id/4KKSo",
+    init_predicate: "http://www.w3.org/2000/01/rdf-schema#label",
+
+    prov: {
+        "https://databus.dbpedia.org/dbpedia/generic/" : "wikipedia",
+        "https://databus.dbpedia.org/dbpedia/mappings/" : "wikipedia",
+        "https://databus.dbpedia.org/dbpedia/wikidata/" : "wikidata",
+        "https://databus.dbpedia.org/vehnem/dnb/" : "dnb",
+        "https://databus.dbpedia.org/vehnem/musicbrainz/" : "musicbrainz",
+        "https://databus.dbpedia.org/kurzum/cleaned-data/": "geonames"
+    }
+
+//    preference: "wikidata.dbpedia.org,en.dbpedia.org,de.dbpedia.org,fr.dbpedia.org,nl.dbpedia.org,sv.dbpedia.org",
 };
