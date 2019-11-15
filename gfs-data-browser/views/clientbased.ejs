@@ -1,127 +1,80 @@
 <%
-    var labels = new Set()
-    var objects = []
-    var sources = new Set()
-    sources.add('general')
+    var source = "general"
 
     var whiteList1 = new Set(["en","be","bg","ca","cs","el","eo","eu","es","fr","ga","gl","id","ja","lv","pt","sv","uk"])
     var whiteList2 = new Set(["ar","az","be","bg","bn","ca","commons","cs","cy","de","el","en","eo", "es","eu","fr","ga","gl","hi","hr","hu","hy","id","it","ja", "ko","lv","mk","nl","pl","pt","ro","ru","sk","sl","sr","sv","tr","uk","vi"])
 
     var color = "white";
 
-    var predicates = new Set()
-
-    function getLangTag ( singleFileLocator ) {
-
-        var langTagStartPos = String(singleFileLocator).indexOf("lang=")
-
-        if ( langTagStartPos > -1 ) {
-
-            var afterLang = String(singleFileLocator).substr(langTagStartPos+5)
-
-            if ( afterLang.indexOf('_') > -1 ) {
-
-                return afterLang.substr(0,afterLang.indexOf('_'))
-
-            } else {
-
-                return afterLang.substr(0,afterLang.indexOf('.'))
-            }
-        } else {
-
-            return "wikidata"
-        }
-    }
-
-    jarray.forEach( function (response) {
-
-        predicates.add(response['predicate']['@id'])
-
-        if ( response['predicate']['@id'] == predicate ) {
-            response.objects.forEach( function ( prov ) {
-                prov["source"].forEach( function ( source ) {
-                    sources.add(getLangTag(source['@id']))
-                })
-            })
-            objects.push(response['objects'])
-        }
-
-        if ( response['predicate']['@id'] == conf.default_predicate ) {
-            response['objects'].forEach( function ( prov ) {
-                labels.add(prov['object']['@value'])
-            })
-        }
-    })
-
     var sourceList = Array.from(sources).sort()
     var predicateList = Array.from(predicates).sort()
 
     var refMap = new Map();
 
-    locals.forEach(function (iri) {
-
-        var tag = iri.split("/").pop();
-
-        if( iri.includes("www.wikidata") ) {
-
-            refMap.set("wikidata",' <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/wikidata.ico"></image></a>')
-
-        } else if (iri.includes("dbpedia") ) {
-
-            var lan = iri.split("//")[1].split(".")[0];
-            lan = ( lan == "dbpedia" ) ? "en" : lan;
-
-            var wikilink = ( iri == "en" ) ? 'http://wikipedia.org/wiki/'+tag : 'http://'+lan+'.wikipedia.org/wiki/'+tag;
-
-            if( whiteList1.has(lan) ) {
-
-                refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
-            } else if( whiteList2.has(lan) ) {
-
-                var dbpediaLink = "http://dbpedia.informatik.uni-leipzig.de:9998/server/extraction/"+lan+"/extract?extractors=mappings&format=trix&title="+tag
-                refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+dbpediaLink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
-            } else {
-
-                refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
-            }
-
-        } else {
-            refMap.set(iri,"");
+    class SingleFileReference {
+        constructor(groupAlias, contentVariants, singleFileLocator ) {
+            this.groupAlias = groupAlias  
+            this.contentVariants = contentVariants
+            this.singleFileLocator = singleFileLocator
         }
-    })
+    }
+
+    prefixToAliasMap = new Map();
+    Object.entries(context).forEach( ([prefix, version]) => 
+    {
+        Object.entries(conf.group_alias).forEach( ([group, alias] ) => 
+        {
+            if( version.startsWith(group) ) prefixToAliasMap.set(prefix, alias)
+        })
+    });
+
+    sourceToSFRMap = new Map();
+    sources.forEach( source => 
+    {
+        let withoutExtension = source.split('.',2)[0]
+        let prefix = withoutExtension.split(':',2)[0]
+        let contentVariants = withoutExtension.split(':',2)[1]
+        sourceToSFRMap.set(source,new SingleFileReference(prefixToAliasMap.get(prefix),contentVariants, context[prefix]+source.split(':',2)[1]))
+    });
+    
+    console.log(sourceToSFRMap)
+
+    function buildSourceEntry( source ) {
+
+        let sfr = sourceToSFRMap.get(source)
+        return `<a href="${sfr.singleFileLocator}">${sfr.groupAlias}(${sfr.contentVariants})</a>`
+    }
+    
+
+    // sources.forEach( sfl => console.log(sfl))
+    // locals.forEach(function (iri) {
+    //     var tag = iri.split("/").pop();
+    //     if( iri.includes("www.wikidata") ) {
+    //         refMap.set("wikidata",' <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/wikidata.ico"></image></a>')
+    //     } else if (iri.includes("dbpedia") ) {
+    //         var lan = iri.split("//")[1].split(".")[0];
+    //         lan = ( lan == "dbpedia" ) ? "en" : lan;
+    //         var wikilink = ( iri == "en" ) ? 'http://wikipedia.org/wiki/'+tag : 'http://'+lan+'.wikipedia.org/wiki/'+tag;
+    //         if( whiteList1.has(lan) ) {
+    //             refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+    //         } else if( whiteList2.has(lan) ) {
+    //             var dbpediaLink = "http://dbpedia.informatik.uni-leipzig.de:9998/server/extraction/"+lan+"/extract?extractors=mappings&format=trix&title="+tag
+    //             refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+dbpediaLink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+    //         } else {
+    //             refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
+    //         }
+    //     } else {
+    //         refMap.set(iri,"");
+    //     }
+    // })
 %>
 
 <!-- Labels -->
 
 <div class="container"><h3><strong>About: </strong><%-  Array.from(labels).sort().join(' | ') %></h3></div>
 
-<!--Sponsored-->
-<% if( false ) {%>
-    <div class="container" style="width: 70%;align-self: center">
-        <div class="my-slider">
-            <figure>
-                <img src="images/aylien.jpg" height="72" width="72">
-                <figcaption><br><a target="_blank" href="https://newsapi.aylien.com/demo#!/?published_at.start=NOW-30DAYS%2FDAY&published_at.end=NOW&entities.body.links.dbpedia%5B%5D=http:%2F%2Fdbpedia.org%2Freresource%2FSiemens&sort_by=recency">Find latest news about Siemens</a></figcaption>
-            </figure>
-            <figure>
-                <img src="images/oc.png" height="72" width="72">
-                    <figcaption><br><a target="_blank" href="https://opencorporates.com/companies/gb/00727817">More data available on OpenCorporates</a></figcaption>
-            </figure>
-            <figure>
-                <img src="images/wikidata.png" height="72" width="102">
-                <figcaption><br><a target="_blank" href="https://www.wikidata.org/wiki/Q81230">Edit on Wikidata</a></figcaption>
-            </figure>
-            <figure>
-                <img src="images/rdfu.png" height="72" width="200">
-                <figcaption><br><a target="_blank" href="">Test data with SHACL</a></figcaption>
-            </figure>
-        </div>
-    </div>
-<% } %>
-
-<!--Menu-->
-
-<div class="container"
+<!-- Menu -->
+<div class="container">
     <form action="./" method="get">
         <div class="form-row">
             <div class="form-group col-md-4">
@@ -174,11 +127,11 @@
                 <label>Source</label>
                 <input class="invis" type="text">
             </th>
-            <th>
-                <!--<label>References</label-->
+            <th style="visibility: hidden;">
+                <label>References</label>
                 <input class="invis" type="text">
             </th>
-            <th class="hidden-col"-->
+            <th class="hidden-col">
                 <label></label>
                 <input class="invis" type="text">
             </th>
@@ -191,29 +144,29 @@
                 element.forEach( function (prov) {
 
                 var color = "white";
-                var objectSources = [];
+                var objectSourcesSet = new Set();
 
                 prov['source'].forEach( function ( src ) {
 
-                    var current_source = getLangTag(src['@id'])
+                    var current_source = src['@id'] //getLangTag(src['@id'])
                     var refLinks = (typeof refMap.get(current_source) === "undefined") ? "" : refMap.get(current_source)
                     if( current_source == source) {
-                        objectSources.push('<strong>'+current_source+'</strong>'+refLinks);
+                        objectSourcesSet.add('<strong>'+current_source+'</strong>'+refLinks);
                         possibleSources.add(current_source)
                         color="lightgreen"
                     } else {
-                        objectSources.push(current_source+refLinks)
+                        objectSourcesSet.add(buildSourceEntry(current_source)+refLinks)
                         possibleSources.add(current_source)
                     }
                 })
 
-                objectSources.sort();
+                var objectSources = Array.from(objectSourcesSet).sort()
 
                 var href = '@id' in prov['object'] ? "./?s="+encodeURIComponent(prov['object']['@id'])+"&src="+source : "" ;
                 var hrefLabel = '@id' in prov['object'] ? prov['object']['@id'] : "";
 
         %>
-        <tr style="background-color:<%- color %>;">
+        <tr style="background-color: <%- color %>;">
             <% if ( '@language' in prov['object'] ) { %>
 
                 <td id="row<%- rowCount %>">
@@ -236,7 +189,6 @@
                 <td><a id="row<%- rowCount %>" href="<%- href %>"><%- hrefLabel %></a></td>
             <% } %>
             <td><%- objectSources.join(' | ')%></td>
-            <!--td>TODO</td-->
             <td class="hidden-col"><%- objectSources.length %></td>
         </tr>
         <% ++rowCount } ) }) %>
@@ -244,39 +196,6 @@
 </div>
 
 <!--Client JS-->
-
-<script>
-
-    // var slider = tns({
-    //     "container": ".my-slider",
-    //     "items": 2,
-    //     "slideBy": "page",
-    //     "mouseDrag": true,
-    //     "swipeAngle": false,
-    //     "speed": 400,
-    //     "nav": false,
-    //     "controls": false,
-    //     "gutter": 0,
-    //     "autoplay": true,
-    //     "autoplayButtonOutput": false,
-    //     "autoplayButton": false,
-    //     // container: '.my-slider',
-    //     // items: 1,
-    //     responsive: {
-    //         640: {
-    //             edgePadding: 20,
-    //             gutter: 20,
-    //             items: 2
-    //         },
-    //         700: {
-    //             gutter: 30
-    //         },
-    //         900: {
-    //             items: 4
-    //         }
-    //     }
-    // });
-</script>
 
 <script type="text/javascript">
 

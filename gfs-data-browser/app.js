@@ -13,7 +13,7 @@ app.set('view engine', 'ejs');
 app.use(express.static('public'));
 
 function logRequest(req, res, next) {
-    console.info(`${dateTime.create().format('Y-m-d H:M:S')} | ${req.url} | from ${hash('sha1').update(req.connection.remoteAddress).digest('base64')}`)
+    console.info(`${dateTime.create().format('Y-m-d H:M:S')} | ${req.url} | from ${hash('sha1').update(req.connection.remoteAddress).digest('base64')} | ${req.headers["accept-language"]}`)
     next()
 }
 app.use(logRequest)
@@ -44,6 +44,63 @@ MongoClient.connect(conf.db, { useNewUrlParser: true, useUnifiedTopology: true }
 //     connection2 = client2.db('infoboxes')
 // });
 
+
+function foo(res, sameThing, pIRI, preFusionJSONArray) {
+
+    var labels = new Set();
+    var objects = [];
+    var predicates = new Set();
+    var sources = new Set();
+    var contextId = null
+
+    preFusionJSONArray.forEach( preFusionJSON => 
+    {
+
+        predicates.add(preFusionJSON['predicate']['@id'])
+        if ( preFusionJSON['predicate']['@id'] == pIRI ) 
+        {
+            contextId = preFusionJSON['@context']
+            preFusionJSON['objects'].forEach( objectProvenance => 
+            {
+                objectProvenance['source'].forEach( provenance => 
+                {
+                    sources.add(provenance['@id'])
+                })
+            })
+            objects.push(preFusionJSON['objects'])
+        }
+        if ( preFusionJSON['predicate']['@id'] == conf.rdfs_label ) {
+            preFusionJSON['objects'].forEach( objectProvenance => 
+            {
+                 labels.add(objectProvenance['object']['@value'])
+            })
+        }
+    })
+
+    prefusionDB.collection("context")
+    .findOne( {"this" : contextId })
+    .then( context => 
+    {
+        res.render(
+            'clientbased',
+            {
+                labels: labels, 
+                subject: sameThing['global'],
+                locals: sameThing['locals'],
+                predicate: pIRI,
+                predicates: predicates,
+                objects: objects,
+                sources: sources, 
+                context: context['@context'], //contextResponse, sameThingResponse ...
+                util: util, conf: conf
+            }
+        );
+    })
+    .catch( err => {
+        console.error(err)
+    })
+}
+
 app.get('/', function(req, res) {
 
     var sIRI = req.query.s;
@@ -54,46 +111,61 @@ app.get('/', function(req, res) {
     if( pIRI == null ) pIRI = conf.init_predicate;
     if( src == null  ) src = "general";
 
-    var original = sIRI;
     sIRI = replaceNamespace(sIRI)
-    var locals;
 
-    getJSON(conf.same_thing+encodeURIComponent(sIRI))
-    .then( function (idResponse) {
-
-        // if( sIRI.startsWith("https://global.dbpedia")) {
-        //     console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+"\t"+pIRI);
-        // } else {
-        //     console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+">>"+idResponse['global']+"\t"+pIRI);
-        // }
-
-        prefusionDB.collection(conf.coll_provenance)
-        .find( {"subject.@id" : idResponse['global'] })
-        .toArray()
-        .then(queryResponse => {
-            
-            res.render('clientbased',{jarray: queryResponse, subject: idResponse['global'], predicate: pIRI,
-                source: src, util: util, conf: conf, locals: idResponse['locals'] });
-        })
-        .catch(queryError => {
-            console.error(queryError)
-        })
-    })
-    .catch(function (idError) {
-        // console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+"\t"+pIRI+"\tunmanaged id");
-
-        connection.collection(conf.collection)
-        .find( {"subject.@id" : sIRI })
-        .toArray()
-        .then(queryResponse => {
-            res.render('clientbased',{jarray: queryResponse, subject: sIRI, predicate: pIRI,
-                source: src, util: util, conf: conf, locals: [sIRI] });
-        })
-        .catch(queryError => {
-            console.error(queryError)
-        })
-    });
+    getJSON(conf.same_thing+encodeURIComponent(sIRI)).then(
+        sameThing => {
+            prefusionDB.collection(conf.coll_provenance)
+            .find( {"subject.@id" : sameThing['global'] })
+            .toArray()
+            .then(preFusionJSONArray => foo(res,sameThing,pIRI,preFusionJSONArray)).catch( queryError => console.error(queryError) )
+        }
+    ).catch(
+        error => {
+            console.log(error)
+            prefusionDB.collection(conf.coll_provenance)
+            .find({"subject.@id" : sIRI })
+            .toArray()
+            .then(
+                queryResponse => {
+                    res.render('clientbased',{preFusionJSONArray: queryResponse, subject: sIRI, predicate: pIRI,
+                        source: src, util: util, prefusionDB: prefusionDB, conf: conf, locals: [sIRI] });
+                }
+            ).catch(
+                queryError => {
+                    console.error(queryError)
+                }
+            )
+        }
+    );
 });
+
+function foobar(preFusionJSONArray) {
+    preFusionJSONArray.forEach( preFusionJSON => {
+        predicates.add(preFusionJSON['predicate']['@id'])
+        if ( preFusionJSON['predicate']['@id'] == predicate ) 
+        {
+            contextId = preFusionJSON['@context']
+            preFusionJSON['objects'].forEach( objectProvenance => 
+            {
+                objectProvenance['source'].forEach( provenance => 
+                {
+                    sources.add(source['@id'])
+                })
+            })
+            objects.push(preFusionJSON['objects'])
+        }
+        if ( preFusionJSON['predicate']['@id'] == conf.rdfs_label ) {
+            preFusionJSON['objects'].forEach( objectProvenance => 
+            {
+                 labels.add(objectProvenance['object']['@value'])
+            })
+        }
+    })
+}
+function sendContextRequest() {
+
+}
 
 function replaceNamespace(iri) {
     var sIRI = iri
