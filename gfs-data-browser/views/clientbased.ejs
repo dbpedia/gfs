@@ -46,33 +46,16 @@
     }
 
     function buildSProvSourceEntry( source, s_prov ) {
-        // console.log(s_prov)
         let sfr = sourceToSFRMap.get(source)
-        return `<a href="${s_prov}">${sfr.groupAlias}(${sfr.contentVariants})</a>`
+            if( sfr.groupAlias === "wikipedia" ) { 
+                var link = `${sfr.contentVariants.replace('lang=','')} <a href="${s_prov.replace('dbpedia.org/resource/','wikipedia.org/wiki/')}"><image class="iconlinks" src="images/wikipedia.ico"></image></a>`
+                link += `<a href="${s_prov}"><image class="iconlinks" src="images/dbpedia.ico"></image></a>`
+            } else {
+                var link = `${sfr.groupAlias} <a href="${s_prov}"><image class="iconlinks" src="images/${sfr.groupAlias}.ico"></image></a>`
+            }
+            link += `<a href="${sfr.singleFileLocator}"><image class="iconlinks" src="images/databus.ico"></image></a>`
+        return link
     }
-    
-
-    // sources.forEach( sfl => console.log(sfl))
-    // locals.forEach(function (iri) {
-    //     var tag = iri.split("/").pop();
-    //     if( iri.includes("www.wikidata") ) {
-    //         refMap.set("wikidata",' <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/wikidata.ico"></image></a>')
-    //     } else if (iri.includes("dbpedia") ) {
-    //         var lan = iri.split("//")[1].split(".")[0];
-    //         lan = ( lan == "dbpedia" ) ? "en" : lan;
-    //         var wikilink = ( iri == "en" ) ? 'http://wikipedia.org/wiki/'+tag : 'http://'+lan+'.wikipedia.org/wiki/'+tag;
-    //         if( whiteList1.has(lan) ) {
-    //             refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+iri+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
-    //         } else if( whiteList2.has(lan) ) {
-    //             var dbpediaLink = "http://dbpedia.informatik.uni-leipzig.de:9998/server/extraction/"+lan+"/extract?extractors=mappings&format=trix&title="+tag
-    //             refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+dbpediaLink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
-    //         } else {
-    //             refMap.set(lan,'  <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/wikipedia.ico"></image></a> <a href="'+wikilink+'" target="_blank"><image class="iconlinks" src="images/dbpedia.png"></image></a>')
-    //         }
-    //     } else {
-    //         refMap.set(iri,"");
-    //     }
-    // })
 %>
 
 <!-- Labels -->
@@ -90,7 +73,7 @@
         </div>
         <div class="form-group col-md-6">
             <label for="predicateList">predicate</label><br>
-            <select style="width: 100%" id="predicateList" data-width="100%" class="selectpicker control" data-live-search="true" name="" onchange="change_predicate(document.getpreFusionElemenetById('predicateList').value)">
+            <select style="width: 100%" id="predicateList" data-width="100%" class="selectpicker control" data-live-search="true" name="" onchange="change_predicate(document.getElementById('predicateList').value)">
                 <% for (i = 0; i < predicateList.length ; i++) {
                 if ( predicateList[i] == predicate ) { %>
                     <option selected><%- predicateList[i] %></option>
@@ -101,7 +84,7 @@
         </div>
         <div class="form-group col-md-2">
             <label for="sourceList">source</label><br>
-            <select id="sourceList" class="selectpicker form-control" data-live-search="true" name="src" onchange="change_source(document.getpreFusionElemenetById('sourceList').value)">
+            <select id="sourceList" class="selectpicker form-control" data-live-search="true" name="src" onchange="change_source(document.getElementById('sourceList').value)">
                 <% for (i = 0; i < sourceList.length ; i++) {
                 if ( sourceList[i] == source ) { %>
                     <option selected value="<%- sourceList[i] %>"><%- sourceList[i] %></option>
@@ -163,7 +146,7 @@
                         color="lightgreen"
                     } else {
                         if( provenance.hasOwnProperty('s_prov')) {
-                            objectSourcesSet.add(buildSProvSourceEntry(current_source,provenance['s_prov']['@id'])+refLinks)
+                            objectSourcesSet.add(buildSProvSourceEntry(current_source,provenance['s_prov']['@id']))
 
                             // objectSourcesSet.add(buildSourceEntry(current_source)+refLinks)
                         } else {
@@ -237,15 +220,15 @@
     // TODO better table sort
     function sortTable(n, dir) {
         var table, rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
-        table = document.getpreFusionElemenetById("fusionTable");
+        table = document.getElementById("fusionTable");
         switching = true;
         while (switching) {
             switching = false;
-            rows = table.getpreFusionElemenetsByTagName("TR");
+            rows = table.getElementsByTagName("TR");
             for (i = 1; i < (rows.length - 1); i++) {
                 shouldSwitch = false;
-                x = rows[i].getpreFusionElemenetsByTagName("TD")[n];
-                y = rows[i + 1].getpreFusionElemenetsByTagName("TD")[n];
+                x = rows[i].getElementsByTagName("TD")[n];
+                y = rows[i + 1].getElementsByTagName("TD")[n];
                 if (dir == "asc") {
                     if (x.innerHTML.toLowerCase() > y.innerHTML.toLowerCase()) {
                         shouldSwitch= true;
@@ -275,7 +258,7 @@
 
     $(function(){
 
-        document.getpreFusionElemenetById("info").innerText = '<%- rowCount %> different value/s from <%- Array.from(possibleSources).length %> source/s';
+        document.getElementById("info").innerText = '<%- rowCount %> different value/s from <%- Array.from(possibleSources).length %> source/s';
 	
 	//sortTable(0,"asc");
 	sortTable(2,"desc");
@@ -286,7 +269,7 @@
 
         for ( index = 0 ; index < rowCount; index++  ) {
             (function(index) { // protects index in an immediately called function
-                var row = document.getpreFusionElemenetById("row"+index);
+                var row = document.getElementById("row"+index);
                 var searchUri = row.innerHTML;
 
 
@@ -309,13 +292,13 @@
             })(index);
         }
 
-        document.getpreFusionElemenetById("subject").addEventListener("keyup", function(event) {
+        document.getElementById("subject").addEventListener("keyup", function(event) {
             event.preventDefault();
             if (event.keyCode == 13) {
                 // var sub = document.getpreFusionElemenetById("subject").innerText;
                 var current = window.location.href;
                 current = current.substr(0,current.indexOf('?'))
-                window.location.href = current+ "?s="+encodeURIComponent(document.getpreFusionElemenetById("subject").value);
+                window.location.href = current+ "?s="+encodeURIComponent(document.getElementById("subject").value);
             }
         });
 

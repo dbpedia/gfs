@@ -45,17 +45,16 @@ MongoClient.connect(conf.db, { useNewUrlParser: true, useUnifiedTopology: true }
 // });
 
 
-function foo(res, sameThing, pIRI, preFusionJSONArray) {
+function foo(res, sIRI, pIRI, preFusionJSONArray) {
 
     var labels = new Set();
     var objects = [];
     var predicates = new Set();
     var sources = new Set();
     var contextId = null
-
     preFusionJSONArray.forEach( preFusionJSON => 
     {
-
+        contextId = contextId == null ? preFusionJSON['@context'] : contextId
         predicates.add(preFusionJSON['predicate']['@id'])
         if ( preFusionJSON['predicate']['@id'] == pIRI ) 
         {
@@ -85,13 +84,12 @@ function foo(res, sameThing, pIRI, preFusionJSONArray) {
             'clientbased',
             {
                 labels: labels, 
-                subject: sameThing['global'],
-                locals: sameThing['locals'],
+                subject: sIRI,
                 predicate: pIRI,
                 predicates: predicates,
                 objects: objects,
                 sources: sources, 
-                context: context['@context'], //contextResponse, sameThingResponse ...
+                context: context['@context'],
                 util: util, conf: conf
             }
         );
@@ -118,7 +116,7 @@ app.get('/', function(req, res) {
             prefusionDB.collection(conf.coll_provenance)
             .find( {"subject.@id" : sameThing['global'] })
             .toArray()
-            .then(preFusionJSONArray => foo(res,sameThing,pIRI,preFusionJSONArray)).catch( queryError => console.error(queryError) )
+            .then(preFusionJSONArray => foo(res,sameThing['global'],pIRI,preFusionJSONArray)).catch( queryError => console.error(queryError) )
         }
     ).catch(
         error => {
@@ -126,15 +124,7 @@ app.get('/', function(req, res) {
             prefusionDB.collection(conf.coll_provenance)
             .find({"subject.@id" : sIRI })
             .toArray()
-            .then(
-                queryResponse => {
-                    res.render('clientbased',{preFusionJSONArray: queryResponse, subject: sIRI, predicate: pIRI,
-                        source: src, util: util, prefusionDB: prefusionDB, conf: conf, locals: [sIRI] });
-                }
-            ).catch(
-                queryError => {
-                    console.error(queryError)
-                }
+            .then(preFusionJSONArray => foo(res,sIRI,pIRI,preFusionJSONArray)).catch(queryError => {console.error(queryError)}
             )
         }
     );

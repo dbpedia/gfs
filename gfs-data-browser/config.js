@@ -28,5 +28,5 @@ module.exports = {
 
     // TODO  group: "https://databus.dbpedia.org/dbpedia/generic/", alias:  "wikidata", ico : ".ico"
 
-//    preference: "wikidata.dbpedia.org,en.dbpedia.org,de.dbpedia.org,fr.dbpedia.org,nl.dbpedia.org,sv.dbpedia.org",
+    // preference: "wikidata.dbpedia.org,en.dbpedia.org,de.dbpedia.org,fr.dbpedia.org,nl.dbpedia.org,sv.dbpedia.org",
 };
