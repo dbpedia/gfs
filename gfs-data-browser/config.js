@@ -2,7 +2,7 @@ module.exports = {
 
     expose_port: "9005",
 
-    db: "mongodb://root:gfs2019*@dbpedia.informatik.uni-leipzig.de:8989/admin",
+    db: "mongodb://root:gfs2019*@dbpedia.informatik.uni-leipzig.de:8979/admin",
     db_name: "prefusion",
 
     coll_provenance: "provenance",

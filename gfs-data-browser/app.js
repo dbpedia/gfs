@@ -62,9 +62,9 @@ function foo(res, sameThing, pIRI, preFusionJSONArray) {
             contextId = preFusionJSON['@context']
             preFusionJSON['objects'].forEach( objectProvenance => 
             {
-                objectProvenance['source'].forEach( provenance => 
+                objectProvenance['prov'].forEach( provenance => 
                 {
-                    sources.add(provenance['@id'])
+                    sources.add(provenance['src']['@id'])
                 })
             })
             objects.push(preFusionJSON['objects'])
