@@ -1,4 +1,6 @@
 <%
+
+
     var labels = new Set()
     var objects = []
     var sources = new Set()
@@ -160,8 +162,10 @@
     <p><font id="info" style="font-size: 18px">0 different values from 0 sources</font></p>
     <table id="fusionTable" class="table table-striped tablesorter">
         <colgroup>
-            <col span="1" style="width: 60%;">
-            <col span="1" style="width: 40%;">
+            <col span="1" style="width: 50%;">
+            <col span="1" style="width: 30%;">
+            <col span="1" style="width: 10%;">
+            <col span="1" style="width: 10%;">
             <col span="1" style="width: 10%;">
             <col span="1" style="width: 0;">
         </colgroup>
@@ -176,6 +180,14 @@
             </th>
             <th>
                 <label>References</label>
+                <input class="invis" type="text">
+            </th>
+            <th>
+                <label><a href="https://wikirank.net/en/<%- wikirank['result']['en']['name'] %>" target="blank">Popularity</a> (total)</label>
+                <input class="invis" type="text">
+            </th>
+            <th>
+                <label>Article <a href="https://wikirank.net/en/<%- wikirank['result']['en']['name'] %>" target="blank">quality</a> (avg.)</label>
                 <input class="invis" type="text">
             </th>
             <th class="hidden-col"-->
@@ -194,35 +206,70 @@
                 var color = "white";
                 var objectSources = [];
                 var langg = "";
-
+                var artcount=0;
+                var pop=0;
+                var quality=0;
+                var avgquality=0;
+                
                 prov['source'].forEach( function ( src ) {
 
                     var current_source = getLangTag(src['@id'])
                     if( getLangTag(src['@id']) != 'wikidata') {langg = getLangTag(src['@id']); }
                     var refLinks = (typeof refMap.get(current_source) === "undefined") ? "" : refMap.get(current_source)
                     if( current_source == source) {
+                        
                         objectSources.push('<strong>'+current_source+'</strong>'+refLinks);
                         possibleSources.add(current_source)
                         color="lightgreen"
                     } else {
+                        if (!refLinks.includes('wikidata.') && langg in wikirank['result'] ) {
+                        pop=pop+wikirank['result'][langg]['popularity'];
+                        quality=quality+wikirank['result'][langg]['quality'];
+                        artcount++;}
                         objectSources.push(current_source+refLinks)
                         possibleSources.add(current_source)
+                        
                     }
                 })
                 var refs = "";
                 var txtt = "";
                 var keee = [];
-                    var reflen = 0;
+                var cnt = 0;
+                var reflen = 0;
+
+                if (references=="0") {txtt = "";}
+                else {
                 if (langg in references) { refs=references[langg];
                 keee = Object.keys(references[langg]);
                 for (var i = 0; i < keee.length; i++) {
-                    refc ++;
+                refc ++;
+if (predicate=="http://www.w3.org/2000/01/rdf-schema#label") {
+
+                  cnt++;  
                   txtt = txtt + '<a id="cli'+refc+'">'+keee[i]+'</a><div id="details'+refc+'" style="display: none; font-size: 10px;"><ul style="list-style-type: none; padding: 0;"><li style="border-bottom: 1px solid gray;">'+references[langg][keee[i]].join('</li><li style="border-bottom: 1px solid gray;">')+'</li></ul></div><br />';
                     txtc = txtc + '$( "#cli'+refc+'" ).click(function() { $( "#details'+refc+'" ).show( "slow" ); });';
-                     
 }
-              reflen = keee.length;
-                                         }
+else {
+
+
+if (predicate.replace("http://dbpedia.org/","")==keee[i]) {
+cnt++; 
+                  txtt = txtt + '<a id="cli'+refc+'">Ref. #'+cnt+'</a><div id="details'+refc+'" style="display: none; font-size: 10px;"><ul style="list-style-type: none; padding: 0;"><li style="border-bottom: 1px solid gray;">'+references[langg][keee[i]].join('</li><li style="border-bottom: 1px solid gray;">')+'</li></ul></div><br />';
+                    txtc = txtc + '$( "#cli'+refc+'" ).click(function() { $( "#details'+refc+'" ).show( "slow" ); });';
+
+}
+}
+
+
+
+reflen = cnt;
+                     
+
+}
+              
+                                         } }
+                                         
+
                 objectSources.sort();
 
                 var href = '@id' in prov['object'] ? "./?s="+encodeURIComponent(prov['object']['@id'])+"&src="+source : "" ;
@@ -248,17 +295,22 @@
                     <%- prov['object']['@value'] %>
                 </td>
 
-            <% } else { %>
+            <% } else { 
+            
+            %>
                 <td><a id="row<%- rowCount %>" href="<%- href %>"><%- hrefLabel %></a></td>
-            <% } %>
+            <% } if (quality>0) {avgquality=(quality/artcount).toFixed(3);} %>
             <td><%- objectSources.join(' | ')%></td>
             <td><strong> <%- reflen %> refs.</strong><br />
                 
                 <%-  txtt  %> </td>
+            <td><%-  pop.toFixed(3)  %></td>
+            <td><%-  avgquality  %></td>
             <td class="hidden-col"><%- objectSources.length %></td>
         </tr>
         <% ++rowCount } ) }) %>
     </table>
+    
 </div>
 <script>
    <%-  txtc  %>   
