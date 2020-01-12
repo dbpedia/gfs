@@ -8,6 +8,8 @@ var expressLayouts = require('express-ejs-layouts');
 // var indexRouter = require('./routes/index');
 // var usersRouter = require('./routes/users');
 var dateTime = require('node-datetime');
+var request = require("request");
+
 
 var conf = require('./config');
 var MongoClient = require('mongodb').MongoClient;
@@ -143,7 +145,7 @@ app.get('/label', function (req,res) {
 
 
 app.get('/infobox', function(req, res) {
-
+    var wikirank = {"result":{"en":{"name":""}}};
     var s = req.query.s;
     var s1 = req.query.s;
     var p = req.query.p;
@@ -171,13 +173,13 @@ app.get('/infobox', function(req, res) {
 
 
     
-    
+      
     
     getJSON(conf.id_management+encodeURIComponent(s)).then( function (idResponse) {
         var idglobal = idResponse['global'].replace('https://global.dbpedia.org/id/','');
-        
+        references=0;
         connection2.collection('infoboxes').find( {"_id" : idglobal }).toArray(function (mongoError, mongoResponse) {
-            //console.log(mongoResponse[0]);
+            //console.log(JSON.stringify(mongoResponse[0]));
         references=mongoResponse[0];
         });
         
@@ -189,16 +191,63 @@ app.get('/infobox', function(req, res) {
         }
 
         connection.collection(conf.collection).find( {"subject.@id" : idResponse['global'] }).toArray(function (mongoError, mongoResponse) {
-            res.render('clientbased2',{jarray: mongoResponse, subject: idResponse['global'], predicate: p,
-                source: src, util: util, conf: conf, locals: idResponse['locals'], references: references });
+            
+            
+        if (references==undefined) {console.log("None"); references="0";}    
+ 
+var engname="";
+var wikiname="";         
+idResponse['locals'].forEach(function(link) {
+    //console.log(link);
+    if (link.includes("dbpedia.org/resource")) { if ((link.includes("//pl.")) || (link.includes("//de.")) || (link.includes("//fr.")) || (link.includes("//de.")) || (link.includes("//ru.")) || (link.includes("//it.")) || (link.includes("//es.")) || (link.includes("//sv.")) || (link.includes("//nl.")) || (link.includes("//dbpedia"))) {
+    wikiname=link.replace("//dbpedia.org/resource/","//en.wikipedia.org/wiki/").replace("dbpedia.org/resource/","wikipedia.org/wiki/").replace("http://","https://");
+        console.log(wikiname)
+request({
+    url: "http://dbpedia.informatik.uni-leipzig.de:8111/infobox/references?article="+wikiname+"&format=json&dbpedia",
+    json: true
+}, function (error, response, body2) {
+
+    if (!error && response.statusCode === 200) {
+        console.log(body2);
+                                                    
+    }});
+                                                    
+                                                     } }
+    if (link.includes("/dbpedia.org")) {engname=link.replace("http://dbpedia.org/resource/","");
+                                       
+var wikirankurl = "https://api.wikirank.net/api.php?lang=en&name="+encodeURIComponent(engname);                                       
+request({
+    url: wikirankurl,
+    json: true
+}, function (error, response, body) {
+
+    if (!error && response.statusCode === 200) {
+        wikirank=body;
+
+res.render('clientbased2',{jarray: mongoResponse, subject: idResponse['global'], predicate: p,
+                source: src, util: util, conf: conf, locals: idResponse['locals'], references: references, wikirank: wikirank });        
+        
+        
+
+        
+        
+    }
+});
+                                        
+                                        
+};
+});
+ 
+
+
         })
 
     }).catch(function (idError) {
         console.log("[ "+dateTime.create().format('Y-m-d H:M:S')+" ]\t/\t"+original+"\t"+p+"\tunmanaged id");
-    
+        
         connection.collection(conf.collection).find( {"subject.@id" : s }).toArray(function (mongoError, mongoResponse) {
             res.render('clientbased2',{jarray: mongoResponse, subject: s, predicate: p,
-                source: src, util: util, conf: conf, locals: [s], references: references });
+                source: src, util: util, conf: conf, locals: [s], references: references, wikirank: wikirank });
         })
     });
 
