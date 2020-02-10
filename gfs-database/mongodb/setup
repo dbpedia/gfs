@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+PSW=""
+DATE="2019.12.01"
+PORT="8969"
+DUMPS="dumps/"
+
+downloadDumps() {
+	mkdir -p $DUMPS/$DATE
+	./getLatestPreFusion.sh > downloadList
+	wget -i downloadList -P $DUMPS/$DATE
+}
+
+dockerRun() {
+	mkdir -p /srv/gfs/db/mongodb/$DATE/
+	docker run -d \
+		--name gfs2019-12-01 \
+		-p $PORT:27017 \
+		-e MONGO_INITDB_ROOT_USERNAME=root \
+		-e MONGO_INITDB_ROOT_PASSWORD=$PSW \
+		-v /srv/gfs/db/mongodb/$DATE/:/data/db \
+		mongo
+}
+
+loadDumps() {
+	find dumps/ -regex ".*$DATE.*bz2" -exec sh -c 'echo {}; lbzcat {} | mongoimport --host localhost:'$PORT' -d prefusion -c provenance --authenticationDatabase admin --username root --password "'$PSW'"' \;
+}
+
+createIndex() {
+	mongo --host localhost:$PORT --authenticationDatabase admin --username root --password "$PSW" < db_index.js
+}
+
+loadContext() {
+	./prepareContext.py $(find dumps/ -regex ".*$DATE.jsonld") > context.jsonld
+	cat context.jsonld | mongoimport --host localhost:$PORT -d prefusion -c context --authenticationDatabase admin --username root --password "$PSW"
+}
+
+downloadDumps 
+dockerRun
+loadDumps
+createIndex
+loadContext
+
+#echo "mongo --host localhost:$PORT admin --username root --password \"$PSW\""
+
