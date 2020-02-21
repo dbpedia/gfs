@@ -15,7 +15,7 @@
     "http-errors": "~1.6.2",
     "jade": "~1.11.0",
     "mongodb": "^3.0.7",
-    "mongoose": "^5.5.3",
+    "mongoose": "^5.7.5",
     "morgan": "^1.9.1",
     "node-datetime": "^2.1.2"
   }
