@@ -19,5 +19,5 @@ if __name__ == "__main__":
         with open(fp, 'r') as f:
             cont_json = json.load(f)
             cont_json.update({ "this": iri })
-            print(cont_json)
+            print(json.dumps(cont_json))
 
