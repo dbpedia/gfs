@@ -31,7 +31,7 @@ createIndex() {
 }
 
 loadContext() {
-	./prepareContext.py $(find dumps/ -regex ".*$DATE.jsonld") > context.jsonld
+	./prepareContext.py $(find dumps/$DATE -regex ".*.jsonld") > context.jsonld
 	cat context.jsonld | mongoimport --host localhost:$PORT -d prefusion -c context --authenticationDatabase admin --username root --password "$PSW"
 }
 
