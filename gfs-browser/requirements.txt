@@ -1,0 +1,6 @@
+flask
+flask_accept
+flask_swagger
+flask_cors
+pymongo
+rdflib-jsonld

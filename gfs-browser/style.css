@@ -1,0 +1,37 @@
+body {
+padding: 50px;
+font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+color: #0071ff;
+}
+
+.invis {
+display: none;
+border: 0;
+border-bottom: 1px solid #ccc;
+}
+
+.content {
+padding-left: 70px;
+padding-right: 40px;
+}
+
+.foo {
+position: fixed;
+left: 0;
+bottom: 0;
+width: 100%;
+background: whitesmoke;
+text-align: right;
+}
+
+.hidden-col {
+visibility: hidden;
+}
+
+.iconlinks {
+border-radius: 50%;
+height: 20px;
+}

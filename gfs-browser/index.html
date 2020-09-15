@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.5.16/dist/vue.js"></script>
+    <script src="https://unpkg.com/vue-router"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.1"></script>
+
+    <script src="https://unpkg.com/vue-select@latest"></script>
+    <link rel="stylesheet" href="https://unpkg.com/vue-select@latest/dist/vue-select.css">
+
+    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> -->
+    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="width: 500px">
+
+        <h1>GFS Data Browser <image style="height:100px;" src="https://upload.wikimedia.org/wikipedia/commons/a/ae/73424-sync-symbol.svg"></image></h1>
+        Prototype for <a href="https://meta.wikimedia.org/wiki/Grants:Project/DBpedia/GlobalFactSyncRE">Global Fact Sync Project</a> funded by the Wikimedia Foundation,  powered by <a href="http://dbpedia.org"><image style=";height:30px;" src="images/200px-dbpedia.png"></image></a>. <br>
+        Feedback via: <a href="https://meta.wikimedia.org/wiki/Grants_talk:Project/DBpedia/GlobalFactSyncRE">Discussion page</a>, <a href="https://github.com/dbpedia/gfs/issues">Github</a> or <a href="mailto:gfs@infai.org">gfs@infai.org</a>
+        
+    </div>
+    <hr>
+    <div id="parent" class="container">
+        <h3><div v-html="labels.sort().join(' | ')"></div></h3>
+        <form action="./" method="get">
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label for="subject">Post any Wikipedia, Wikidata or DBpedia URI here</label>
+                    <input type="text" v-on:keyup.enter="submit($event)" :value="subject" class="form-control" placeholder="subject" id="subject" name="s" value="">
+                </div>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="predicateList">predicate</label><br>
+                <!-- data-width="100%"  data-live-search="true"  -->
+                <v-select :options="predicateCollection" v-model="predicate"></v-select>
+            </div>
+            <div class="form-group col-md-2">
+                <label for="sourceList">source</label><br>
+                <v-select :options="sourceCollection" v-model="source"></v-select>
+            </div>
+        </form>
+    <div>
+        <table class="table table-striped">
+            <thead>
+                <colgroup>
+                    <col span="1" style="width: 60%;">
+                    <col span="1" style="width: 50%;">
+                </colgroup>
+                <tr>
+                    <th>Value</th>
+                    <th>Source</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="row in tableData"><td v-html="row.valueHTML"></td><td v-html="row.sourcesHTML"></td></tr>
+            </tbody>
+        </table>
+    </div>
+    </div>
+    <script src="script.js"></script>
+    <!-- <script src="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.js"></script> -->
+</body>
