@@ -6,14 +6,17 @@ from flask_accept import accept, accept_fallback
 import json
 import pymongo
 import requests
-from rdflib import Graph, plugin
+from rdflib import Graph, plugin, URIRef
 import urllib.parse
+from urllib.error import HTTPError
 from functools import reduce
+from rdflib.namespace import OWL
 
 IP = '0.0.0.0'
 PORT = 9005
 MONGODB_URI = 'mongodb://root:gfsroot@dbpedia.informatik.uni-leipzig.de:8969/admin'
 SAMETHING_URI = "https://global.dbpedia.org/same-thing/lookup/"
+SAMEPROP_URI = "https://global.dbpedia.org/same-prop/lookup/"
 
 myclient = pymongo.MongoClient(MONGODB_URI)
 mydb = myclient["prefusion"]
@@ -138,9 +141,7 @@ def rdf():
     arr = []
     
     for doc in cursor:
-        # print(urllib.parse.quote(doc['predicate']['@id']))
         contextIRI = doc['@context']
-        print(contextIRI)
         context = contextCol.find_one({'this': contextIRI})['@context']
         
         doc.update({'@context': context})
@@ -153,6 +154,45 @@ def rdf():
 
 
     return Response(gAll.serialize(format='turtle'),mimetype='text/turtle')
+
+@app.route("/idAsRDF", methods=['GET'])
+def idAsRDF():
+    uri = request.args.get('uri','')
+    urlString = f'{SAMETHING_URI}?uri={uri}'
+
+    try:
+        with urllib.request.urlopen(urlString) as url:
+            data = json.loads(url.read().decode())
+            globalUri = data['global']
+            g = Graph()
+            g.bind('owl', OWL)
+            for local in data['locals']:
+                g.add((URIRef(globalUri),OWL.sameAs,URIRef(local)))
+            
+        return Response(g.serialize(format='turtle'),mimetype='text/turtle')
+
+    except HTTPError:
+        return Response(status=404 ,mimetype='text/turtle')
+
+
+@app.route("/propAsRDF")
+def propAsRDF():    
+    uri = request.args.get('uri','')
+    urlString = f'{SAMEPROP_URI}?uri={uri}'
+
+    try:
+        with urllib.request.urlopen(urlString) as url:
+            data = json.loads(url.read().decode())
+            globalUri = str(data['global']).replace("/id/","/prop/")
+            g = Graph()
+            g.bind('owl', OWL)
+            for local in data['locals']:
+                g.add((URIRef(globalUri),OWL.equivalentProperty,URIRef(local)))
+                
+            return Response(g.serialize(format='turtle'),mimetype='text/turtle')
+
+    except HTTPError:
+        return Response(status=404 ,mimetype='text/turtle')
 
 if __name__ == "__main__":
     app.run(host=IP, port=PORT)
