@@ -14,7 +14,8 @@ from rdflib.namespace import OWL
 
 IP = '0.0.0.0'
 PORT = 9005
-MONGODB_URI = 'mongodb://root:gfsroot@dbpedia.informatik.uni-leipzig.de:8969/admin'
+#MONGODB_URI = 'mongodb://root:gfsroot@dbpedia.informatik.uni-leipzig.de:8969/admin'
+MONGODB_URI = 'mongodb://root:root2020@tools.dbpedia.org:10201/admin'
 SAMETHING_URI = "https://global.dbpedia.org/same-thing/lookup/"
 SAMEPROP_URI = "https://global.dbpedia.org/same-prop/lookup/"
 
@@ -26,7 +27,8 @@ contextCol = mydb["context"]
 app = Flask(__name__,static_url_path='',static_folder='./')
 CORS(app)
 
-default_s = 'https://global.dbpedia.org/id/4KKSo'
+#default_s = 'https://global.dbpedia.org/id/4KKSo'
+default_s = 'https://global.dbpedia.org/id/2wvzs'
 
 @app.route('/', methods=['GET'])
 def root():
@@ -158,7 +160,8 @@ def rdf():
 @app.route("/idAsRDF", methods=['GET'])
 def idAsRDF():
     uri = request.args.get('uri','')
-    urlString = f'{SAMETHING_URI}?uri={uri}'
+    urlString = SAMETHING_URI+"?uri="+uri
+    print(urlString)
 
     try:
         with urllib.request.urlopen(urlString) as url:
@@ -178,12 +181,12 @@ def idAsRDF():
 @app.route("/propAsRDF")
 def propAsRDF():    
     uri = request.args.get('uri','')
-    urlString = f'{SAMEPROP_URI}?uri={uri}'
+    urlString = SAMEPROP_URI+"?uri="+uri
 
     try:
         with urllib.request.urlopen(urlString) as url:
             data = json.loads(url.read().decode())
-            globalUri = str(data['global']).replace("/id/","/prop/")
+            globalUri = str(data['global']).replace("/id/","/property/")
             g = Graph()
             g.bind('owl', OWL)
             for local in data['locals']:

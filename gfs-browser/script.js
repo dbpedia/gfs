@@ -1,3 +1,6 @@
+//import VueRouter from 'vue-router';
+//Vue.use(VueRouter);
+
 var router = new VueRouter({
     mode: 'history',
     routes: []
@@ -13,7 +16,7 @@ var myApp = new Vue({
         sameThing: "/same-thing/lookup/?uri=",
         labels: [],
         prefusion: [],
-        subject: 'https://global.dbpedia.org/id/4KKSo',
+        subject: 'https://global.dbpedia.org/id/2wvzs',
         predicate: "http://www.w3.org/2000/01/rdf-schema#label",
         context: {},
         source: 'general',
@@ -28,6 +31,7 @@ var myApp = new Vue({
             "https://databus.dbpedia.org/dbpedia/mappings/" : "wikipedia",
             "https://databus.dbpedia.org/dbpedia/wikidata/" : "wikidata",
             "https://databus.dbpedia.org/jj-author/dnb/" : "dnb",
+            "https://databus.dbpedia.org/jj-author/kb/" : "kb",
             "https://databus.dbpedia.org/vehnem/musicbrainz/" : "musicbrainz",
             "https://databus.dbpedia.org/kurzum/cleaned-data/": "geonames"
         }
@@ -107,10 +111,11 @@ var myApp = new Vue({
             vm = this
             sourceArr = provObjProvenance.map(function (provenance) {
                 meta = vm.resolveSource(provenance['src']['@id'])
+		    s_prov = provenance.hasOwnProperty('s_prov') ? provenance['s_prov']['@id'] : vm.subject
                 return { 
                     'alias': meta['alias'],
                     'fileid' : meta['fileid'],
-                    's_prov': ( provenance['s_prov']['@id'] || vm.subject )
+                    's_prov': s_prov
                 };
             }).map( function (meta) {
                 if (meta.alias.startsWith('wiki_')) {
@@ -167,7 +172,8 @@ var myApp = new Vue({
             vm.rawTableData = vm.prefusion.filter(function (doc) {
                 return doc['p'] === vm.predicate;
             }).map( function (doc){
-                vm.$http.get(vm.api+'context'+'?iri='+encodeURI(doc['c'])).then(function(data) {    
+		console.log(doc['p'])
+                vm.$http.get(vm.api+'context'+'?iri='+encodeURIComponent(doc['p'])).then(function(data) {    
                     vm.context = data.body["@context"] || {};
                     vm.changed = !vm.changed
                 });
