@@ -1,64 +1,133 @@
 <!DOCTYPE html>
 <head>
-    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue-router@3.5.3/dist/vue-router.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.3/dist/vue-resource.min.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/vue-select@3.18.3/dist/vue-select.min.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-select@3.18.3/dist/vue-select.css">
-
-    <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> -->
-    <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-
-    <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-router@3.5.3/dist/vue-router.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-resource@1.5.3/dist/vue-resource.min.js"></script>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/vue-select@3.18.3/dist/vue-select.min.js"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/vue-select@3.18.3/dist/vue-select.css">
+  <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> -->
+  <!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script> -->
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div style="width: 500px">
-
-        <h1>GFS Data Browser <image style="height:100px;" src="https://upload.wikimedia.org/wikipedia/commons/a/ae/73424-sync-symbol.svg"></image></h1>
-        Prototype for <a href="https://meta.wikimedia.org/wiki/Grants:Project/DBpedia/GlobalFactSyncRE">Global Fact Sync Project</a> funded by the Wikimedia Foundation,  powered by <a href="http://dbpedia.org"><image style=";height:30px;" src="images/200px-dbpedia.png"></image></a>. <br>
-        Feedback via: <a href="https://meta.wikimedia.org/wiki/Grants_talk:Project/DBpedia/GlobalFactSyncRE">Discussion page</a>, <a href="https://github.com/dbpedia/gfs/issues">Github</a> or <a href="mailto:gfs@infai.org">gfs@infai.org</a>
-        
-    </div>
-    <hr>
-    <div id="parent" class="container">
-        <h3><div v-html="labels.sort().join(' | ')"></div></h3>
-        <form action="./" method="get">
-            <div class="form-row">
-                <div class="form-group col-md-4">
-                    <label for="subject">Post any Wikipedia, Wikidata or DBpedia URI here</label>
-                    <input type="text" v-on:keyup.enter="submit($event)" :value="subject" class="form-control" placeholder="subject" id="subject" name="s" value="">
-                </div>
-            </div>
-            <div class="form-group col-md-6">
-                <label for="predicateList">predicate</label><br>
-                <!-- data-width="100%"  data-live-search="true"  -->
-                <v-select :options="predicateCollection" v-model="predicate"></v-select>
-            </div>
-            <div class="form-group col-md-2">
-                <label for="sourceList">source</label><br>
-                <v-select :options="sourceCollection" v-model="source"></v-select>
-            </div>
-        </form>
+  <h1 style="width: 100%">
+    <img style="height:50px;" src="https://upload.wikimedia.org/wikipedia/commons/a/ae/73424-sync-symbol.svg" /> Global Linked Data Browser
+  </h1>
+  <hr>
+  <div id="parent" class="container">
+    <form action="./" method="get">
+      <div class="form-row">
+        <div class="form-group col-md-12">
+          <label for="subject">Post any Linked Data URI here</label>
+          <input type="text" v-on:keyup.enter="submit($event)" :value="subject" class="form-control" placeholder="subject" id="subject" name="s" value="">
+        </div>
+      </div>
+    </form>
+    <h3>
+      <div class="text-overflow" v-html="labels.sort().join(' | ')"></div>
+    </h3>
+    <a class="btn-overflow" href="#">Show all labels</a>
+    <br>
     <div>
-        <table class="table table-striped">
+      <a href="#/" id="expAll" class="col">Expand/Collapse all properties</a>
+      <div v-for="row in newTable">
+        <hr>
+        <details>
+          <summary v-html="row.pre_stats"></summary>
+	  <p>
+          <table class="table table-striped">
             <thead>
-                <colgroup>
-                    <col span="1" style="width: 60%;">
-                    <col span="1" style="width: 50%;">
-                </colgroup>
-                <tr>
-                    <th>Value</th>
-                    <th>Source</th>
-                </tr>
+              <colgroup>
+                <col span="1" style="width: 33%;">
+                <col span="1" style="width: 33%;">
+                <col span="1" style="width: 33%;">
+              </colgroup>
+              <tr>
+                <th>predicate</th>
+                <th>value</th>
+                <th>source</th>
+              </tr>
             </thead>
             <tbody>
-                <tr v-for="row in tableData"><td v-html="row.valueHTML"></td><td v-html="row.sourcesHTML"></td></tr>
+              <tr v-for="row2 in row.ops">
+                <td v-html="row.pre"></td>
+                <td v-html="row2.values"></td>
+                <td v-html="row2.prov"></td>
+              </tr>
             </tbody>
-        </table>
+          </table>
+	  </p>
+        </details>
+      </div>
     </div>
-    </div>
-    <script src="script.js"></script>
-    <!-- <script src="https://unpkg.com/bootstrap-table@1.16.0/dist/bootstrap-table.min.js"></script> -->
+  </div>
+  <script src="script.js"></script>
+<script>
+var text = $('.text-overflow'),
+     btn = $('.btn-overflow'),
+       h = text[0].scrollHeight;
+
+if(true) {
+        btn.addClass('more');
+        btn.css('display', 'block');
+}
+
+btn.click(function(e)
+{
+  e.stopPropagation();
+
+  if (btn.hasClass('less')) {
+      btn.removeClass('less');
+      btn.addClass('more');
+      btn.text('Show all labels');
+
+      text.animate({'height': h});
+  } else {
+      btn.addClass('less');
+      btn.removeClass('more');
+      btn.text('Show less labels');
+      text.animate({'height': '100%'});
+  }
+});
+
+// Reference the toggle link
+const xa = document.getElementById('expAll');
+
+// Register link on click event
+xa.addEventListener('click', function(e) {
+
+  /* Toggle the two classes that represent "state"
+  || determined when link is clicked
+  */
+  this.classList.toggle('exp');
+  this.classList.toggle('col');
+
+  // Collect all <details> into a NodeList
+  const details = document.querySelectorAll('details');
+
+  /* Convert NodeList into an array then iterate
+  || through it...
+  */
+  const D = Array.from(details);
+
+  /* Start a for loop at 6 instead of 0
+  || Now 0 - 5 details are excluded
+  */
+  for (let i = 0; i < D.length; i++) {
+
+    /* If the link has the class .exp...
+    || make each <detail>'s open attribute true
+    */
+    if (this.classList.contains('exp')) {
+      D[i].open = true;
+      // Otherwise remove [open]
+    } else {
+      D[i].removeAttribute('open');
+    }
+  }
+}, false);
+</script>
 </body>
+</html>

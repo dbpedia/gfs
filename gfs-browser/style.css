@@ -35,3 +35,41 @@ visibility: hidden;
 border-radius: 50%;
 height: 20px;
 }
+
+.text-overflow {
+      width:100%;
+      height:25px;
+      display:block;
+      overflow:hidden;
+      #word-break: break-word;
+      #word-wrap: break-word;
+}
+
+.btn-overflow {
+    display: block;
+    text-decoration: none;
+}
+
+details {
+  user-select: none;
+}
+
+details>summary span.icon {
+  width: 24px;
+  height: 24px;
+  transition: all 0.3s;
+  margin-left: auto;
+}
+
+details[open] summary span.icon {
+  transform: rotate(180deg);
+}
+
+summary {
+  display: flex;
+  cursor: pointer;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}

@@ -46,6 +46,7 @@ var myApp = new Vue({
         }, function (error) {
             console.log('failed same thing service')
             vm.loadPrefusion()
+	    //vm.prepareTable()
         });
     },
     mounted() {
@@ -74,13 +75,45 @@ var myApp = new Vue({
             Array.from(nameSet).forEach( name => sourceSet.add(vm.resolveSource(name)['alias'].replace('wiki_',''))) //TODO wiki vaiable?
             sourceSet.add('general')
             return Array.from(sourceSet).sort(function (a,b) {return (a === b) ? 0 : ((a > b) ? 1 : -1);});
-        }
+        },
+	newTable() {
+		vm = this
+		return vm.prefusion.map( function (doc) {
+			sourceSet = new Set()
+			_ops = doc['o'].sort( function (a,b) {
+                av = a['object']['@language'] || a['object']['@value'] || a['object']['@id']
+                bv = b['object']['@language'] || b['object']['@value'] || b['object']['@id']
+                return (av === bv) ? 0 : ((av > bv) ? 1 : -1);
+            }).sort( function (a,b) {
+                av = a['prov'].length
+                bv = b['prov'].length
+                return (av === bv) ? 0 : ((av > bv) ? -1 : 1);
+            }).map( function (doc_o) {
+				values = vm.renderValue(doc_o['object'])
+				sources = doc_o['prov'].map( function (prov) {
+					source = prov['s_prov']['@id']  
+					sourceSet.add(source)
+					return '<a target="_blank" href="'+source+'">'+source+'</a>'
+				})
+				return {
+					'values': values,
+					'prov': sources.join(" | ")
+				};
+			})
+			valuesCount = _ops.length
+			sourceCount = sourceSet.size
+			_pre = '<a target="_blank" href="'+doc['p']+'">'+doc['p']+'</a>'
+			_pre_stats = "<strong>"+doc['p']+"</strong>: "+valuesCount+" value(s), "+sourceCount+" resource(s)"
+			return {'pre_stats': _pre_stats, 'pre': _pre, 'ops': _ops};
+		});
+	},
     },
     methods: {
         loadPrefusion() {
             vm = this
             vm.$http.get(vm.api+'lookup'+'?s='+encodeURI(vm.subject)).then(function(data) {
                 vm.prefusion = data.body || {};
+		console.log(data.body);
                 labels = new Set(vm.prefusion.filter( function (doc) {
                     return doc['p'] === "http://www.w3.org/2000/01/rdf-schema#label"
                 }).map(function (doc) {
@@ -92,9 +125,12 @@ var myApp = new Vue({
                     });
                 }).flat(1));
                 vm.labels = Array.from(labels)
-                vm.changedPredicate()
+                //vm.changedPredicate()
             });
         },
+	renderPropertyStats(p) {
+		return "<h3>"+p+"</h3>";
+	},
         renderValue(provObjValue) {
             vm = this
             if (provObjValue['@language']) {
@@ -107,10 +143,15 @@ var myApp = new Vue({
                 return `<a href="./?s=${provObjValue['@id']}">${vm.targetLabels[provObjValue['@id']] || provObjValue['@id']}</a>`
             }
         },
-        renderSource(provObjProvenance) {
-            vm = this
+	renderValues(provObjValues) {
+		vm = this
+		return provObjValues.map( function (provObj) {
+			return vm.renderValue(provObj['object']);
+		}).join(" ");
+	},
+        renderSource(provObjProvenance, context) {
             sourceArr = provObjProvenance.map(function (provenance) {
-                meta = vm.resolveSource(provenance['src']['@id'])
+                meta = vm.resolveSource(provenance['src']['@id'], context)
 		    s_prov = provenance.hasOwnProperty('s_prov') ? provenance['s_prov']['@id'] : vm.subject
                 return { 
                     'alias': meta['alias'],
@@ -137,10 +178,12 @@ var myApp = new Vue({
                 return (av === bv) ? 0 : ((av > bv) ? 1 : -1);
             }).join(' | ')
         },
-        resolveSource(name) {
+        resolveSource(name, context) {
+	    console.log(context.get)
             vm = this
             label_local = name.split(':')
-            iri = vm.context[label_local[0]] || ''
+            iri = context[label_local[0]] || ''
+	    console.log(iri)
             baseiri = iri.split('/',6).slice(0,5).join('/')+'/'
             alias = vm.aliasMap[baseiri] || 'placeholder'
             if(alias === 'wikipedia' ) {
@@ -167,13 +210,22 @@ var myApp = new Vue({
             });
             return iri  
         },
+	resolveContext(p) {
+                return vm.$http.get(vm.api+'context'+'?iri='+encodeURIComponent(p)).then(function(data) {
+			context = data.body["@context"] || {};
+			return context;
+                });
+	},
         changedPredicate() {
             vm = this
-            vm.rawTableData = vm.prefusion.filter(function (doc) {
+		//vm.rawTableData = vm.prefusion.	
+	    vm.rawTableData = vm.prefusion.filter(function (doc) {
                 return doc['p'] === vm.predicate;
+		//return true;
             }).map( function (doc){
 		console.log(doc['p'])
-                vm.$http.get(vm.api+'context'+'?iri='+encodeURIComponent(doc['p'])).then(function(data) {    
+                vm.$http.get(vm.api+'context'+'?iri='+encodeURIComponent(doc['p'])).then(function(data) {
+		    //xx = data.body["@context"] || {};
                     vm.context = data.body["@context"] || {};
                     vm.changed = !vm.changed
                 });
@@ -189,7 +241,7 @@ var myApp = new Vue({
                 av = a['prov'].length
                 bv = b['prov'].length
                 return (av === bv) ? 0 : ((av > bv) ? -1 : 1);
-            });
+            });	
         },
         submit(event) {
             vm = this
@@ -197,6 +249,7 @@ var myApp = new Vue({
         }
     },
     watch: {
+	/*
         predicate: function() {
             vm = this
             console.log(vm.predicate)
@@ -206,9 +259,9 @@ var myApp = new Vue({
         changed: function() {
             vm = this
             vm.tableData = vm.rawTableData.map( function (provObj) {
-                return {'valueHTML': vm.renderValue(provObj['object']), 'sourcesHTML': vm.renderSource(provObj['prov'])}
+                return {'propertyValue': '<a target="_blank" href="'+vm.predicate+'">'+vm.predicate+'</a>', 'valueHTML': vm.renderValue(provObj['object']), 'sourcesHTML': vm.renderSource(provObj['prov'])}
             })
-        },
+        },*/
         // targetLabels: function() {
         //     vm = this
         //     vm.tableData = vm.rawTableData.map( function (provObj) {
