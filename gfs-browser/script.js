@@ -13,7 +13,7 @@ var myApp = new Vue({
     el: '#parent',
     data: {
         api: "/",
-        sameThing: "/same-thing/lookup/?uri=",
+        sameThing: "http://global.dbpedia.org/same-thing/lookup/?uri=",
         labels: [],
         prefusion: [],
         subject: 'https://global.dbpedia.org/id/2wvzs',
@@ -113,7 +113,6 @@ var myApp = new Vue({
             vm = this
             vm.$http.get(vm.api+'lookup'+'?s='+encodeURI(vm.subject)).then(function(data) {
                 vm.prefusion = data.body || {};
-		console.log(data.body);
                 labels = new Set(vm.prefusion.filter( function (doc) {
                     return doc['p'] === "http://www.w3.org/2000/01/rdf-schema#label"
                 }).map(function (doc) {
