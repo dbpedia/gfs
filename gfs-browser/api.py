@@ -16,8 +16,8 @@ IP = '0.0.0.0'
 PORT = 9005
 #MONGODB_URI = 'mongodb://root:gfsroot@dbpedia.informatik.uni-leipzig.de:8969/admin'
 MONGODB_URI = 'mongodb://root:root2020@tools.dbpedia.org:10201/admin'
-SAMETHING_URI = "https://global.dbpedia.org/same-thing/lookup/"
-SAMEPROP_URI = "https://global.dbpedia.org/same-prop/lookup/"
+SAMETHING_URI = "https://dbpedia.link/same-thing/lookup/"
+SAMEPROP_URI = "https://dbpedia.link/same-prop/lookup/"
 
 myclient = pymongo.MongoClient(MONGODB_URI)
 mydb = myclient["prefusion"]
@@ -27,8 +27,8 @@ contextCol = mydb["context"]
 app = Flask(__name__,static_url_path='',static_folder='./')
 CORS(app)
 
-#default_s = 'https://global.dbpedia.org/id/4KKSo'
-default_s = 'https://global.dbpedia.org/id/2wvzs'
+#default_s = 'https://dbpedia.link/id/4KKSo'
+default_s = 'https://dbpedia.link/id/2wvzs'
 
 @app.route('/', methods=['GET'])
 def root():
