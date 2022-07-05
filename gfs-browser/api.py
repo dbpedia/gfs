@@ -17,7 +17,7 @@ PORT = 9005
 #MONGODB_URI = 'mongodb://root:gfsroot@dbpedia.informatik.uni-leipzig.de:8969/admin'
 MONGODB_URI = 'mongodb://root:root2020@tools.dbpedia.org:10201/admin'
 SAMETHING_URI = "https://dbpedia.link/same-thing/lookup/"
-SAMEPROP_URI = "https://dbpedia.link/same-prop/lookup/"
+SAMEPROP_URI = "https://global.dbpedia.org/same-prop/lookup/"
 
 myclient = pymongo.MongoClient(MONGODB_URI)
 mydb = myclient["prefusion"]
