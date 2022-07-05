@@ -30,11 +30,13 @@
     </h3>
     <a class="btn-overflow" href="#">Show all labels</a>
     <br>
+    <h4 v-html="'Found '+totalValuesCnt+' values @ '+locals.length+' sources'"></h4>
+    <br>
     <div>
       <a href="#/" id="expAll" class="col">Expand/Collapse all properties</a>
       <div v-for="row in newTable">
         <hr>
-        <details>
+        <details open>
           <summary v-html="row.pre_stats"></summary>
 	  <p>
           <table class="table table-striped">

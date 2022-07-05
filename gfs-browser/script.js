@@ -13,7 +13,9 @@ var myApp = new Vue({
     el: '#parent',
     data: {
         api: "/",
-        sameThing: "http://global.dbpedia.org/same-thing/lookup/?uri=",
+        locals: [],
+        totalValuesCnt: 0,
+        sameThing: "https://global.dbpedia.org/same-thing/lookup/?uri=",
         labels: [],
         prefusion: [],
         subject: 'https://global.dbpedia.org/id/2wvzs',
@@ -42,6 +44,7 @@ var myApp = new Vue({
         vm.predicate = vm.$route.query.p || vm.predicate
         vm.$http.get(vm.sameThing+encodeURIComponent(vm.subject)).then(function(data) {    
             vm.subject = data.body["global"] || vm.subject
+            vm.locals = data.body["locals"] || []
             vm.loadPrefusion()
         }, function (error) {
             console.log('failed same thing service')
@@ -78,6 +81,7 @@ var myApp = new Vue({
         },
 	newTable() {
 		vm = this
+                console.log(vm.locals)
 		return vm.prefusion.map( function (doc) {
 			sourceSet = new Set()
 			_ops = doc['o'].sort( function (a,b) {
@@ -89,9 +93,10 @@ var myApp = new Vue({
                 bv = b['prov'].length
                 return (av === bv) ? 0 : ((av > bv) ? -1 : 1);
             }).map( function (doc_o) {
+				vm.totalValuesCnt += 1
 				values = vm.renderValue(doc_o['object'])
 				sources = doc_o['prov'].map( function (prov) {
-					source = prov['s_prov']['@id']  
+					source = prov['s_prov']['@id']
 					sourceSet.add(source)
 					return '<a target="_blank" href="'+source+'">'+source+'</a>'
 				})
@@ -103,7 +108,8 @@ var myApp = new Vue({
 			valuesCount = _ops.length
 			sourceCount = sourceSet.size
 			_pre = '<a target="_blank" href="'+doc['p']+'">'+doc['p']+'</a>'
-			_pre_stats = "<strong>"+doc['p']+"</strong>: "+valuesCount+" value(s), "+sourceCount+" resource(s)"
+			//_pre_stats = "<strong>"+doc['p']+"</strong>: "+valuesCount+" value(s) @ "+sourceCount+" resource(s)"
+			_pre_stats = valuesCount+" value(s) @ "+sourceCount+" source(s)"
 			return {'pre_stats': _pre_stats, 'pre': _pre, 'ops': _ops};
 		});
 	},
